@@ -6,7 +6,7 @@ A step-by-step guide to a small Raspberry Pi device that keeps an automatic, tim
 (when, how long, how loud, what kind of sound). It never keeps audio when it hears talking, and its log shows if an entry was changed.
 
 - **Who made it:** Shad ([@AlbertanCoder](https://github.com/AlbertanCoder)) in Edmonton, by directing AI coding tools.
-- **What's in it:** a parts list with live-checked prices and links, a 3D model you can turn, print files for the case and a no-holes mic wall holder, and 12 plain build steps, each with a "check it worked".
+- **What's in it:** a parts list with live-checked prices and links; a detailed 3D model (102 parts: 40 GPIO pins, ports with openings, cooler fins and a spinning fan) with Exploded, X-ray, Labels, Show measurements and Power-on preview; a step panel that flies the camera to each step; print files for the case and a no-holes mic wall holder; and 12 plain build steps, each with a "check it worked".
 - **Honest status:** step 0 (the logger on a laptop) is tested; steps 1–11 are written from the parts' documentation and are marked "Not tested yet" until the parts arrive.
 
 ## Where the numbers come from

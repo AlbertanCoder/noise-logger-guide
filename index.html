@@ -56,7 +56,22 @@ padding:4px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;border:0;min
 table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--pine-deep);display:flex;justify-content:space-around;z-index:10}
 nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;display:flex;align-items:center;padding:0 10px}
-@media (min-width:900px){#viewer{height:460px}}
+@media (min-width:900px){#viewer{height:480px}}
+.stage{display:grid;gap:14px}
+.mnav{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-top:8px;text-align:center}
+@media (min-width:900px){.mnav{display:none}}
+@media (min-width:900px){.stage{grid-template-columns:1fr 330px}}
+.steppanel{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fffdf8;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sp-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.steppanel h3{margin:.2em 0 0}
+.sp-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin:4px 0}
+.sp-nav .btn:disabled{opacity:.45}
+.sp-list{display:flex;flex-direction:column;gap:4px;max-height:none}
+.sp-list button{min-height:44px;text-align:left;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14.5px;padding:6px 10px;cursor:pointer}
+.sp-list button[aria-current="step"]{background:var(--gold-pale);border-color:var(--gold)}
+.vlabel .dot{position:absolute;left:50%;bottom:-9px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 2px #fff}
+.mlabel{position:absolute;transform:translate(-50%,-50%);background:#fff;color:var(--ember);border:1.5px solid var(--ember);font-size:13px;font-weight:700;padding:2px 7px;border-radius:999px;pointer-events:none;white-space:nowrap}
+
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 </head>
@@ -74,18 +89,37 @@ nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;displa
 </header>
 
 <section class="card" id="model">
-  <h2>The device in 3D</h2>
-  <p class="small soft" id="vhint">Scroll the page normally. To turn the model, tap <b>Move the model</b>, then drag with one finger (or the mouse); pinch or scroll to zoom. Tap a label to jump to its step.</p>
-  <div id="viewer" aria-label="3D model of the noise logger"></div>
-  <div class="vbar">
-    <button class="btn" id="b-grab" aria-pressed="false">Move the model</button>
-    <button class="btn" id="b-assembled" aria-pressed="true">Assembled</button>
-    <button class="btn" id="b-exploded" aria-pressed="false">Exploded</button>
-    <button class="btn" id="b-spin" aria-pressed="false">Auto-spin</button>
+  <h2>The device in 3D — pull it apart, then build it</h2>
+  <p class="small soft" id="vhint">The page scrolls normally. To turn the model, tap <b>Move the model</b>, then drag (one finger or the mouse) and pinch or scroll to zoom.
+  Use <b>Next step</b> to walk the build: the camera flies to each step and the parts it uses light up.</p>
+  <div class="stage">
+    <div>
+      <div id="viewer" aria-label="3D model of the noise logger"></div>
+      <div class="mnav"><button class="btn" id="m-back" type="button" aria-label="Previous step">‹ Back</button><span id="m-count" class="small"></span><button class="btn solid" id="m-next" type="button" aria-label="Next step">Next ›</button></div>
+      <div class="vbar">
+        <button class="btn" id="b-grab" aria-pressed="false">Move the model</button>
+        <button class="btn" id="b-assembled" aria-pressed="true">Assembled</button>
+        <button class="btn" id="b-exploded" aria-pressed="false">Exploded</button>
+        <button class="btn" id="b-xray" aria-pressed="false">See inside (X-ray)</button>
+        <button class="btn" id="b-labels" aria-pressed="true">Labels</button>
+        <button class="btn" id="b-measure" aria-pressed="false">Show measurements</button>
+        <button class="btn" id="b-power" aria-pressed="false">Power on (preview)</button>
+        <button class="btn" id="b-spin" aria-pressed="false">Auto-spin</button>
+      </div>
+      <p id="vcaption">You're looking at the whole device: the printed case with the Raspberry Pi inside, and the microphone in its wall holder.</p>
+    </div>
+    <aside class="steppanel" aria-label="Build it, step by step">
+      <div class="sp-head"><b>Build it, step by step</b><span class="soft small" id="sp-count">Step 1 of 12</span></div>
+      <h3 id="sp-title"></h3>
+      <span class="badge" id="sp-badge"></span>
+      <p class="small" id="sp-text"></p>
+      <p class="small check" id="sp-check"></p>
+      <div class="sp-nav"><button class="btn" id="sp-back" type="button">← Back</button><button class="btn solid" id="sp-next" type="button">Next step →</button></div>
+      <div class="sp-list"></div>
+    </aside>
   </div>
-  <p id="vcaption">You're looking at the whole device: the printed case with the Raspberry Pi inside, and the microphone in its wall holder.</p>
-  <p class="small soft">Shapes are simple blocks. Board size, mounting holes, port positions and the cooler come from the official Raspberry Pi drawings;
-  parts drawn <b>see-through</b> have sizes still to confirm with a tape measure on the real parts (step 3).</p>
+  <p class="small soft">How accurate is it? Board size, the 4 mounting holes, every port position, the chips' outlines and the cooler come from the official
+  Raspberry Pi drawings (press <b>Show measurements</b>). The microphone's exact size is still to confirm with a tape measure (step 3), so it is drawn slightly see-through.</p>
 </section>
 
 <section class="card" id="buy">
