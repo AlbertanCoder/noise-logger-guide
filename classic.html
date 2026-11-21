@@ -2,10 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Build a Noise Logger — Shad's build guide</title>
 <meta name="description" content="A step-by-step guide to a Raspberry Pi noise logger: parts with live prices, a 3D model built from the official drawings, print files and plain build steps.">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#123a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Noise Logger">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
+/* Shad: the page never zooms (pinch or double-tap); only the 3D model zooms, with its own two-finger pinch */
+html,body{touch-action: pan-x pan-y}
 :root{--bg:#f7f2e8;--card:#fff;--ink:#21332b;--soft:#5d6f66;--line:#e2d9c6;--pine:#1b5e4f;--pine-deep:#123a2e;--pine-pale:#e4f0ea;
 --ember:#c2571b;--ember-pale:#fbe9dc;--gold:#9a700a;--gold-pale:#f9f0d4;--shadow:0 2px 12px rgba(24,58,46,.08)}
 *{box-sizing:border-box}
@@ -90,7 +101,7 @@ nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;displa
 
 <section class="card" id="model">
   <h2>The device in 3D — pull it apart, then build it</h2>
-  <p class="small soft" id="vhint">The page scrolls normally. To turn the model, tap <b>Move the model</b>, then drag (one finger or the mouse) and pinch or scroll to zoom.
+  <p class="small soft" id="vhint">The page scrolls normally. Pinch with two fingers on the model to zoom it; drag with the mouse to turn it. On a phone, tap <b>Move the model</b> to turn it with one finger.
   Use <b>Next step</b> to walk the build: the camera flies to each step and the parts it uses light up.</p>
   <div class="stage">
     <div>
@@ -244,5 +255,7 @@ nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;displa
 <script src="js/app.js"></script>
 <p style="text-align:center;font-size:14px"><a href="index.html">New layout</a></p>
 <script type="module" src="js/viewer.js"></script>
+<script>/* iPhone browsers ignore user-scalable=no: cancel their pinch gestures (the 3D view uses pointer events, so it still zooms) */
+["gesturestart","gesturechange","gestureend"].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();},{passive:false});});</script>
 </body>
 </html>

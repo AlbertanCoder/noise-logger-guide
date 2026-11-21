@@ -31,7 +31,13 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.castShadow = true; su
 const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(-1, 0.6, -1); scene.add(fill);
 const camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enabled = false; controls.enableDamping = true;
+controls.enableDamping = true;
+// Not grabbed: one finger scrolls the page (touch-action pan-y), two fingers pinch-zoom the model, the mouse drags to turn it,
+// and the mouse wheel scrolls the page (Ctrl + wheel zooms). 'Move the model' adds one-finger turning.
+let grabbed = false;
+function setTouches() { controls.touches = { ONE: grabbed ? THREE.TOUCH.ROTATE : null, TWO: THREE.TOUCH.DOLLY_PAN }; }
+setTouches();
+host.addEventListener("wheel", (e) => { if (!grabbed && !e.ctrlKey) e.stopPropagation(); }, { capture: true });
 const root = new THREE.Group(); scene.add(root);
 const groups = {}, home = new Map(), labelEls = {};
 let spin = false, exploded = false, xray = false, labelsOn = true, power = false, measure = false, focus = null, topView = false;
@@ -169,8 +175,8 @@ $("b-measure").onclick = () => {
 $("b-power").onclick = () => { power = !power; press("b-power", power); paint(); };
 $("b-spin").onclick = () => { spin = !spin; press("b-spin", spin); };
 $("b-grab").onclick = () => {
-  controls.enabled = !controls.enabled; host.classList.toggle("grabbed", controls.enabled); press("b-grab", controls.enabled);
-  $("b-grab").textContent = controls.enabled ? "Done moving (scroll the page again)" : "Move the model";
+  grabbed = !grabbed; setTouches(); host.classList.toggle("grabbed", grabbed); press("b-grab", grabbed);
+  $("b-grab").textContent = grabbed ? "Done moving (scroll the page again)" : "Move the model";
 };
 
 // ---------- measurements drawn on the model (official numbers) ----------
