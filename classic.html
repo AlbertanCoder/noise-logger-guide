@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build a Noise Logger — Shad's build guide</title>
+<meta name="description" content="A step-by-step guide to a Raspberry Pi noise logger: parts with live prices, a 3D model built from the official drawings, print files and plain build steps.">
+<style>
+:root{--bg:#f7f2e8;--card:#fff;--ink:#21332b;--soft:#5d6f66;--line:#e2d9c6;--pine:#1b5e4f;--pine-deep:#123a2e;--pine-pale:#e4f0ea;
+--ember:#c2571b;--ember-pale:#fbe9dc;--gold:#9a700a;--gold-pale:#f9f0d4;--shadow:0 2px 12px rgba(24,58,46,.08)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.6 "Segoe UI",system-ui,Arial,sans-serif;padding-bottom:72px}
+a{color:var(--pine)} code{font-family:Consolas,"Courier New",monospace;font-size:14px;background:#f1ece0;padding:1px 4px;border-radius:4px}
+main{max-width:900px;margin:0 auto;padding:12px}
+.hero{background:linear-gradient(135deg,var(--pine-deep),var(--pine));color:#fff;border-radius:18px;padding:22px 20px;box-shadow:var(--shadow)}
+.kicker{letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:#f2d38a;font-weight:700}
+.hero h1{margin:.2em 0 .3em;font-size:1.9em;line-height:1.15}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 12px;font-size:14px}
+.bar{height:10px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden}.bar>span{display:block;height:100%;background:#f2d38a;width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);
+background:var(--card);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.primary{background:#fff;color:var(--pine-deep);border:0}.btn.solid{background:var(--pine);color:#fff;border:0}
+.btn[aria-pressed="true"]{background:var(--pine);color:#fff;border-color:var(--pine)}
+section.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;box-shadow:var(--shadow)}
+h2{margin:.1em 0 .5em;font-size:1.35em} h3{margin:.2em 0 .3em;font-size:1.1em}
+.soft{color:var(--soft)} .small{font-size:14px}
+.note{background:var(--gold-pale);border-left:4px solid var(--gold);padding:10px 12px;border-radius:8px;margin:10px 0}
+.warn{background:var(--ember-pale);border-left:4px solid var(--ember);padding:10px 12px;border-radius:8px;margin:10px 0}
+/* 3D viewer: the page scrolls normally until you tap "Move the model" (UI fix 2) */
+#viewer{position:relative;height:360px;border-radius:14px;overflow:hidden;background:#eef1ee;touch-action:pan-y}
+#viewer canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+#viewer.grabbed,#viewer.grabbed canvas{touch-action:none;outline:3px solid var(--pine)}
+.vlabel{position:absolute;transform:translate(-50%,-100%);background:rgba(18,58,46,.92);color:#fff;font-size:13px;line-height:1.3;
+padding:4px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;border:0;min-height:28px}
+.vlabel.dim{opacity:.35}
+.vbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#vcaption{margin:10px 0 0;font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.part{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.part .price{font-size:1.3em;font-weight:700}
+.badge{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--pine-pale);color:var(--pine-deep)}
+.badge.unv{background:var(--gold-pale);color:#6b4e06}
+.own{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14.5px}
+.own input,.done input{width:22px;height:22px}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+.tile{background:var(--pine-pale);border-radius:12px;padding:10px 12px}.tile b{display:block;font-size:1.4em}
+.step{border:1px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}
+.step header{display:flex;gap:12px;align-items:flex-start;background:var(--pine-deep);color:#fff;padding:12px 14px}
+.num{flex:none;width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.6);display:grid;place-items:center;font-weight:700}
+.step .body{padding:12px 14px}
+.step ol{margin:.4em 0;padding-left:1.3em}
+.check{background:var(--pine-pale);border-radius:10px;padding:10px 12px;margin:10px 0}
+.done{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600}
+.tested{background:#d9f0e3;color:#0f5132}.untested{background:var(--gold-pale);color:#6b4e06}
+table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--pine-deep);display:flex;justify-content:space-around;z-index:10}
+nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;display:flex;align-items:center;padding:0 10px}
+@media (min-width:900px){#viewer{height:480px}}
+.stage{display:grid;gap:14px}
+.mnav{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-top:8px;text-align:center}
+@media (min-width:900px){.mnav{display:none}}
+@media (min-width:900px){.stage{grid-template-columns:1fr 330px}}
+.steppanel{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fffdf8;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sp-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.steppanel h3{margin:.2em 0 0}
+.sp-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin:4px 0}
+.sp-nav .btn:disabled{opacity:.45}
+.sp-list{display:flex;flex-direction:column;gap:4px;max-height:none}
+.sp-list button{min-height:44px;text-align:left;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14.5px;padding:6px 10px;cursor:pointer}
+.sp-list button[aria-current="step"]{background:var(--gold-pale);border-color:var(--gold)}
+.vlabel .dot{position:absolute;left:50%;bottom:-9px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 2px #fff}
+.mlabel{position:absolute;transform:translate(-50%,-50%);background:#fff;color:var(--ember);border:1.5px solid var(--ember);font-size:13px;font-weight:700;padding:2px 7px;border-radius:999px;pointer-events:none;white-space:nowrap}
+
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+<main>
+<header class="hero" id="home">
+  <div class="kicker">Built for Shad · Edmonton</div>
+  <h1>Build a Noise Logger</h1>
+  <p>A small box that listens all day and keeps an automatic, timestamped record of noise: when it happened, how long, how loud and what kind of sound it was.
+  It never keeps audio when it hears talking, and its log shows if anything was changed later.</p>
+  <div class="chips"><span class="chip" id="chip-cost">$270 with GST</span><span class="chip">~3 h of hands-on building</span><span class="chip">Beginner · no soldering · no holes in walls</span></div>
+  <div class="bar" aria-hidden="true"><span id="progress-bar"></span></div>
+  <p class="small" id="progress-text" style="margin:.4em 0 1em">0 steps done</p>
+  <a class="btn primary" href="#build">Start the build ↓</a>
+</header>
+
+<section class="card" id="model">
+  <h2>The device in 3D — pull it apart, then build it</h2>
+  <p class="small soft" id="vhint">The page scrolls normally. To turn the model, tap <b>Move the model</b>, then drag (one finger or the mouse) and pinch or scroll to zoom.
+  Use <b>Next step</b> to walk the build: the camera flies to each step and the parts it uses light up.</p>
+  <div class="stage">
+    <div>
+      <div id="viewer" aria-label="3D model of the noise logger"></div>
+      <div class="mnav"><button class="btn" id="m-back" type="button" aria-label="Previous step">‹ Back</button><span id="m-count" class="small"></span><button class="btn solid" id="m-next" type="button" aria-label="Next step">Next ›</button></div>
+      <div class="vbar">
+        <button class="btn" id="b-grab" aria-pressed="false">Move the model</button>
+        <button class="btn" id="b-assembled" aria-pressed="true">Assembled</button>
+        <button class="btn" id="b-exploded" aria-pressed="false">Exploded</button>
+        <button class="btn" id="b-xray" aria-pressed="false">See inside (X-ray)</button>
+        <button class="btn" id="b-labels" aria-pressed="true">Labels</button>
+        <button class="btn" id="b-measure" aria-pressed="false">Show measurements</button>
+        <button class="btn" id="b-power" aria-pressed="false">Power on (preview)</button>
+        <button class="btn" id="b-spin" aria-pressed="false">Auto-spin</button>
+      </div>
+      <p id="vcaption">You're looking at the whole device: the printed case with the Raspberry Pi inside, and the microphone in its wall holder.</p>
+    </div>
+    <aside class="steppanel" aria-label="Build it, step by step">
+      <div class="sp-head"><b>Build it, step by step</b><span class="soft small" id="sp-count">Step 1 of 12</span></div>
+      <h3 id="sp-title"></h3>
+      <span class="badge" id="sp-badge"></span>
+      <p class="small" id="sp-text"></p>
+      <p class="small check" id="sp-check"></p>
+      <div class="sp-nav"><button class="btn" id="sp-back" type="button">← Back</button><button class="btn solid" id="sp-next" type="button">Next step →</button></div>
+      <div class="sp-list"></div>
+    </aside>
+  </div>
+  <p class="small soft">How accurate is it? Board size, the 4 mounting holes, every port position, the chips' outlines and the cooler come from the official
+  Raspberry Pi drawings (press <b>Show measurements</b>). The microphone's exact size is still to confirm with a tape measure (step 3), so it is drawn slightly see-through.</p>
+</section>
+
+<section class="card" id="buy">
+  <h2>What to buy</h2>
+  <p class="small soft">Prices and stock were read on each shop's page on the date shown. A working link is not stock: check again before you pay, and check the model number matches.</p>
+  <div class="cards" id="cards"></div>
+  <div class="totals" id="totals"></div>
+  <p class="small soft">GST 5% (Alberta). Amazon showed free delivery when checked; PiShop shipping appears only in its cart.</p>
+</section>
+
+<section class="card" id="tools">
+  <h2>Tools you need</h2>
+  <ul>
+    <li>Small Phillips screwdriver (for the M2.5 screws)</li>
+    <li>Tape measure (mm side)</li>
+    <li>Needle-nose pliers or tweezers (to hold the little nuts)</li>
+    <li>A laptop with a microSD card slot or a USB card reader (the SD card comes with an adapter)</li>
+    <li>4 small zip ties (for the mic holder)</li>
+    <li>Access to a 3D printer (library makerspace or a friend's), PLA or PETG</li>
+  </ul>
+</section>
+
+<section class="card" id="build">
+  <h2>Build steps</h2>
+  <p class="small soft">One action per line. Each step ends with a check: do it before you move on. <span class="badge tested">Tested</span> means the step was actually done and worked;
+  <span class="badge untested">Not tested yet</span> means it's written from the parts' documentation and will be checked when the parts are in hand.</p>
+  <div id="steps"></div>
+</section>
+
+<section class="card" id="print">
+  <h2>Print files</h2>
+  <table>
+    <tr><th>File</th><th>Size (mm)</th><th>Supports</th></tr>
+    <tr><td><a href="print/case_base.stl" download>case_base.stl</a></td><td id="sz-case_base"></td><td>None (print open side up)</td></tr>
+    <tr><td><a href="print/case_lid.stl" download>case_lid.stl</a></td><td id="sz-case_lid"></td><td>None (flat)</td></tr>
+    <tr><td><a href="print/mic_cradle.stl" download>mic_cradle.stl</a></td><td id="sz-mic_cradle"></td><td>None (back flat on the bed)</td></tr>
+  </table>
+  <p>Settings: PLA or PETG · 0.2 mm layers · 20% infill · 3 walls · no supports. These are ordinary starting settings (the printer's own slicer profile for PLA is fine).</p>
+  <div class="warn"><b>Don't print yet.</b> Do step 3 first: measure the real Pi and mic. Some port sizes are typical values, not measured, and may need a small change.</div>
+</section>
+
+<section class="card" id="how">
+  <h2>How it works — and what it can't do</h2>
+  <p>A microphone near the ceiling measures loudness 10 times a second. Anything louder than the room's normal quiet, for half a second or with a sharp thump, becomes one event.
+  Each event gets a time (Alberta time), length, loudness, number of thumps and up to 3 sound types from YAMNet, Google's free sound-recognition model.</p>
+  <ul>
+    <li><b>Talking is never recorded.</b> If a voice is heard, no audio is kept, only the numbers.</li>
+    <li><b>Changes show.</b> Each log entry carries a fingerprint of the one before it; editing or deleting one breaks the chain.</li>
+    <li><b>It is not a sound level meter.</b> Loudness is measured relative to its own microphone, not in dB(A), so it is never compared with a bylaw's decibel limits.</li>
+    <li><b>Only a bylaw officer can confirm a violation.</b> The log is a record of when and how often noise happened.</li>
+  </ul>
+  <h3>Time and cost</h3>
+  <table>
+    <tr><td>Parts</td><td id="tc-cost"></td></tr>
+    <tr><td>Hands-on building (steps 1–11)</td><td>about 3 hours, plus printing time</td></tr>
+    <tr><td>Software set-up</td><td>steps 8–9, about 30 minutes</td></tr>
+  </table>
+  <p class="small soft">Made by Shad (<a href="https://github.com/AlbertanCoder" target="_blank" rel="noopener">@AlbertanCoder</a>) by directing AI coding tools. Measurements: Raspberry Pi 5 and Active Cooler mechanical drawings (datasheets.raspberrypi.com).</p>
+</section>
+</main>
+<nav class="tabs" aria-label="Sections"><a href="#home">Home</a><a href="#model">3D</a><a href="#buy">Buy</a><a href="#build">Build</a><a href="#print">Print</a></nav>
+
+<script type="application/json" id="buy-data">
+{"checkedOn":"2026-11-21","gst":0.05,"lines":[
+{"id":"pi","item":"Raspberry Pi 5, 2GB","model":"SC1642","price":110.50,"shop":"PiShop.ca","url":"https://www.pishop.ca/product/raspberry-pi-5-2gb/","stock":"In stock","status":"VERIFIED","why":"The computer. 2GB is plenty: the logger uses well under 1 GB."},
+{"id":"psu","item":"Official 27W USB-C power supply","model":"SC1158","price":16.95,"shop":"PiShop.ca","url":"https://www.pishop.ca/product/raspberry-pi-27w-usb-c-power-supply-black-us/","stock":"In stock","status":"VERIFIED","why":"5.1 V / 5 A, 1.2 m cable. Phone chargers often can't supply enough."},
+{"id":"cooler","item":"Official Active Cooler","model":"SC1148","price":7.15,"shop":"PiShop.ca","url":"https://www.pishop.ca/product/raspberry-pi-active-cooler/","stock":"In stock","status":"VERIFIED","why":"Keeps the Pi from slowing down when it runs all day in a box."},
+{"id":"sd","item":"SanDisk MAX Endurance 64GB microSD","model":"SDSQQVR-064G-GN6IA","price":60.99,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B084CJ96GT","stock":"In stock","status":"VERIFIED","why":"Made for non-stop recording (rated 30,000 hours on the listing)."},
+{"id":"mic","item":"FIFINE K669B USB microphone","model":"K669B","price":39.09,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B0BVXQFCSB","stock":"In stock","status":"VERIFIED","why":"Plug-in USB mic, 20 Hz–20 kHz (maker's spec). Tape its gain knob once set."},
+{"id":"screws","item":"M2.5 nylon screw and nut kit","model":"B0788FR59P","price":15.99,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B0788FR59P","stock":"In stock","status":"VERIFIED","why":"Holds the Pi on the case posts and the lid on."},
+{"id":"strips","item":"Command Large Picture Hanging Strips","model":"B00EZ0QMQW","price":6.47,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B00EZ0QMQW","stock":"In stock","status":"VERIFIED","why":"Mounts the mic holder without holes. Rated 16 lb per pack; the mic and holder weigh about 190 g."}
+]}
+</script>
+<script type="application/json" id="steps-data">
+[
+{"n":0,"title":"Optional: try the logger on your laptop first","time":"20 min","parts":[],"tested":true,"focus":[],
+ "actions":["Install Python 3.12 on the laptop.","Set up the logger's folder and install its parts (the logger code is private for now; its README has the three set-up commands).","Run its self-test: <code>python -m pytest -q</code>.","Run a quiet-room measurement: <code>python -m noise_logger --calibrate</code>."],
+ "check":"The self-test says all tests passed, and the quiet measurement prints a level and a saved threshold.","proof":"Done on 2026-11-21: 27 tests passed; two quiet measurements 0.0 dB apart."},
+{"n":1,"title":"Order the parts","time":"30 min","parts":["all"],"tested":false,"focus":[],
+ "actions":["Open each link in the Buy list.","Check the model number on the page matches the card.","Order the PiShop parts together, and the Amazon parts together."],
+ "check":"Both order confirmations list the same model numbers as the cards."},
+{"n":2,"title":"Check the parts when they arrive","time":"15 min","parts":["all"],"tested":false,"focus":["board","cooler","mic"],
+ "actions":["Take a photo of each box's label.","Find SC1642 and 2GB on the Pi box.","Leave the Pi in its anti-static bag until step 6."],
+ "check":"Every model number matches the Buy list."},
+{"n":3,"title":"Measure the real parts (before printing)","time":"10 min","parts":["pi","mic"],"tested":false,"focus":["board","ethernet","usb_stack_upper","mic"],
+ "actions":["Measure the board: it should be 85 × 56 mm.","Measure the tallest part on the board (the USB ports).","Measure the mic's width and length.","Write the numbers down and send them in, so the print files can be adjusted if needed."],
+ "check":"Board 85 × 56 mm (± 1 mm). If anything is off by more than 1 mm, wait before printing."},
+{"n":4,"title":"Print the case, lid and mic holder","time":"about 1 h of your time (plus print time)","parts":[],"tested":false,"focus":["case_base","case_lid","mic_cradle"],
+ "actions":["Download the three files from Print files.","Print with the settings listed there, no supports.","Remove any loose strings of plastic."],
+ "check":"The case measures about 100 × 70 mm across the screw ears, and 93 × 63 mm across the box itself."},
+{"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tested":false,"focus":["sdcard"],
+ "actions":["On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","In Customisation: set a name (noise-logger), your own username and password, your home Wi-Fi, and turn on SSH.","Write the card."],
+ "check":"Imager says the write finished successfully."},
+{"n":6,"title":"Put it together","time":"20 min","parts":["pi","cooler","screws"],"tested":false,"focus":["board","cooler","fan","case_base"],
+ "actions":["Clip the Active Cooler onto the Pi (it is meant to stay on for good).","Push the microSD card into the slot under the board.","Drop 4 nuts into the hex holes under the case.","Set the Pi on the 4 posts and screw it down with 4 M2.5 screws.","Put the lid on with 4 screws into the corner ears."],
+ "warn":"Don't force a screw: plastic threads strip easily. Snug is enough.",
+ "check":"Nothing rattles, and every port lines up with its opening."},
+{"n":7,"title":"First start and connect from the laptop","time":"10 min","parts":["psu"],"tested":false,"focus":["usb-c_power"],
+ "actions":["Plug in the power supply and wait 2 minutes.","On the laptop, open PowerShell and type: <code>ssh yourname@noise-logger.local</code>.","If that name isn't found, find the Pi in your router's device list and use its number instead."],
+ "check":"You see the Pi's command prompt."},
+{"n":8,"title":"Install the logger","time":"20 min","parts":[],"tested":false,"focus":[],
+ "actions":["Update the Pi: <code>sudo apt update && sudo apt full-upgrade</code>.","Install the sound parts: <code>sudo apt install python3-venv libportaudio2 alsa-utils git</code>.","Install the logger and run its self-test."],
+ "check":"The self-test passes on the Pi."},
+{"n":9,"title":"Mic check and quiet-room measurement","time":"10 min","parts":["mic"],"tested":false,"focus":["mic"],
+ "actions":["Plug in the mic.","List the mics: <code>arecord -l</code>.","Set the mic's gain knob once, then put tape over it.","Run the quiet-room measurement twice with the room quiet."],
+ "check":"The two quiet measurements are within 2 dB of each other."},
+{"n":10,"title":"Mount the mic on the wall (no holes)","time":"15 min","parts":["strips","mic"],"tested":false,"focus":["mic_cradle","mic"],
+ "actions":["Test one strip in a hidden spot first and peel it off after a day (paint check).","Clean the wall spot with rubbing alcohol and let it dry.","Stick the holder about 15 cm below the ceiling with 2 pairs of strips.","Wait an hour, then strap the mic in with zip ties, pointing up.","Keep the mic at least 1 m from the Pi's fan."],
+ "warn":"To remove a strip later, stretch it slowly straight down along the wall, never pull it towards you.",
+ "check":"The mic points at the ceiling and the holder doesn't move when you tap it."},
+{"n":11,"title":"Restart test and read the report on your phone","time":"10 min","parts":[],"tested":false,"focus":[],
+ "actions":["Restart the Pi: <code>sudo reboot</code>.","Wait 2 minutes.","On your phone (on home Wi-Fi), open the report address shown in the logger's set-up notes."],
+ "check":"The report opens on your phone after the restart, and new events appear."}
+]
+</script>
+<script type="application/json" id="model-labels">
+{"board":"Raspberry Pi 5","cooler":"Active Cooler","usb-c_power":"USB-C power","micro-hdmi_0":"micro-HDMI","ethernet":"Ethernet","usb_stack_upper":"USB ports",
+ "sdcard":"microSD (underneath)","case_base":"Printed case","case_lid":"Lid with vents","mic_cradle":"Mic wall holder","mic":"FIFINE mic"}
+</script>
+<script type="application/json" id="label-steps">{"board":6,"cooler":6,"usb-c_power":7,"micro-hdmi_0":3,"ethernet":3,"usb_stack_upper":3,"sdcard":5,"case_base":4,"case_lid":6,"mic_cradle":10,"mic":9}</script>
+<script type="application/json" id="numbers-data">{}</script>
+<script src="js/app.js"></script>
+<p style="text-align:center;font-size:14px"><a href="index.html">New layout</a></p>
+<script type="module" src="js/viewer.js"></script>
+</body>
+</html>

@@ -5,18 +5,22 @@
   var STORE = "noise-logger-guide-v1"; // same storage as the live guide: ticks carry over
   function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
   function save(st) { try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) { /* private mode */ } }
-  var state = load(); state.own = state.own || {}; state.done = state.done || {}; state.open = state.open || null;
+  var state = load(); state.own = state.own || {}; state.done = state.done || {}; state.open = state.open || null; state.printed = state.printed || {};
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function money(v) { return "$" + v.toFixed(2); }
 
-  fetch("index.html").then(function (r) { return r.text(); }).then(function (txt) {
+  function boot() {
+    start(JSON.parse(document.getElementById("buy-data").textContent), JSON.parse(document.getElementById("steps-data").textContent));
+    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js"; document.body.appendChild(m);
+  }
+  if (document.getElementById("buy-data")) boot();
+  else fetch("classic.html").then(function (r) { return r.text(); }).then(function (txt) {
     var doc = new DOMParser().parseFromString(txt, "text/html");
     ["buy-data", "steps-data", "model-labels", "label-steps"].forEach(function (id) {
       var s = document.createElement("script"); s.type = "application/json"; s.id = id; s.textContent = doc.getElementById(id).textContent;
       document.body.appendChild(s);
     });
-    start(JSON.parse(document.getElementById("buy-data").textContent), JSON.parse(document.getElementById("steps-data").textContent));
-    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js"; document.body.appendChild(m);
+    boot();
   });
 
   function start(buy, steps) {
@@ -38,9 +42,8 @@
       document.getElementById("bill").innerHTML =
         '<div class="tile"><b>' + money(all * g) + '</b>all parts, with GST</div><div class="tile"><b>' + money(got * g) +
         '</b>bought so far</div><div class="tile"><b>' + money((all - got) * g) + "</b>still to buy</div>";
-      var n = buy.lines.filter(function (p) { return state.own[p.id]; }).length;
-      document.getElementById("d-buy").textContent = n + " of " + buy.lines.length + " bought · " + money(all * g);
       document.getElementById("t-cost").textContent = money(all * g);
+      dashboard();
     }
     var cards = document.getElementById("cards");
     buy.lines.forEach(function (p) {
@@ -92,7 +95,7 @@
       if (s.warn) body.appendChild(el("div", "note safety", "<b>⚠ Safety:</b> " + s.warn));
       body.appendChild(el("details", null, "<summary>✓ Before you go on</summary><div>" + s.check + (s.proof ? '<p class="small soft">Proof: ' + s.proof + "</p>" : "") + "</div>"));
       var lab = el("label", "done"), box = document.createElement("input"); box.type = "checkbox"; box.checked = !!state.done[s.n];
-      box.addEventListener("change", function () { state.done[s.n] = box.checked; save(state); progress(); if (box.checked) openNext(); });
+      box.addEventListener("change", function () { state.done[s.n] = box.checked; save(state); progress(); dashboard(); if (box.checked) openNext(); });
       lab.appendChild(box); lab.appendChild(document.createTextNode("This step is done")); body.appendChild(lab);
       art.appendChild(body); wrap.appendChild(art);
     });
@@ -114,6 +117,35 @@
     var lo = document.getElementById("leftoff"); lo.value = state.leftoff || "";
     lo.addEventListener("input", function () { state.leftoff = lo.value; save(state); });
     progress(); openNext();
+
+    // ---------- Print ticks ----------
+    document.querySelectorAll("[data-printed]").forEach(function (b) {
+      b.checked = !!state.printed[b.dataset.printed];
+      b.addEventListener("change", function () { state.printed[b.dataset.printed] = b.checked; save(state); dashboard(); });
+    });
+
+    // ---------- Home dashboard (Option 4's progress cards) ----------
+    function dashboard() {
+      var g = 1 + buy.gst, left = 0;
+      var bought = buy.lines.filter(function (p) { if (!state.own[p.id]) left += p.price; return state.own[p.id]; }).length;
+      var printed = ["case_base", "case_lid", "mic_cradle"].filter(function (k) { return state.printed[k]; }).length;
+      var done = steps.filter(function (s) { return state.done[s.n]; }).length;
+      var set = function (id, t) { var e = document.getElementById(id); if (e) e.textContent = t; };
+      set("dc-buy", bought + " / " + buy.lines.length); set("dc-buy2", left > 0 ? money(left * g) + " still to buy" : "all bought");
+      set("dc-print", printed + " / 3"); set("dc-build", done + " / " + steps.length);
+      var nx = nextStep(); set("dc-build2", nx ? "next: step " + nx.n : "all done");
+      var ready = !!state.done[11]; set("dc-use", ready ? "Ready" : "Use it"); set("dc-use2", ready ? "open the phone page" : "after step 11");
+      [["dc-buy", bought === buy.lines.length], ["dc-print", printed === 3], ["dc-build", done === steps.length], ["dc-use", ready]].forEach(function (x) {
+        var e = document.getElementById(x[0]); if (e) e.parentNode.classList.toggle("ok", x[1]);
+      });
+      // overall: buying 20%, printing 10%, building 70%
+      var pct = Math.round(20 * bought / buy.lines.length + 10 * printed / 3 + 70 * done / steps.length);
+      var ring = document.getElementById("ring"); if (ring) ring.style.setProperty("--p", pct);
+      set("ring-pct", pct + "%");
+      set("ring-text", pct === 0 ? "Nothing ticked yet: start with Buy." : pct >= 100 ? "Built and running. Well done!" :
+        (nx ? "Next: Step " + nx.n + " · " + nx.title : "Keep going"));
+    }
+    dashboard();
 
     // ---------- Print sizes from the generator's report ----------
     fetch("models/numbers.json").then(function (r) { return r.json(); }).then(function (num) {

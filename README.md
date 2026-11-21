@@ -1,6 +1,6 @@
 # Build a Noise Logger
 
-**[▶ Open the guide](https://albertancoder.github.io/noise-logger-guide/)** · works on a phone and a desktop · nothing to install
+**[▶ Open the guide](https://albertancoder.github.io/noise-logger-guide/)** · works on a phone and a desktop · same layout as the Heat-Spotting Drone guide (Home · Build · 3D · Buy · Print) · [classic one-page version](https://albertancoder.github.io/noise-logger-guide/classic.html)
 
 A step-by-step guide to a small Raspberry Pi device that keeps an automatic, timestamped record of noise
 (when, how long, how loud, what kind of sound). It never keeps audio when it hears talking, and its log shows if an entry was changed.
