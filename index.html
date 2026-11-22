@@ -154,7 +154,7 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
     <div class="eyebrow">What this is</div>
     <p style="margin:.3em 0">A small box that listens all day and keeps an automatic, timestamped record of noise: when, how long, how loud and what kind of sound.
     It never keeps audio when it hears talking, and its log shows if anything was changed later.</p>
-    <div class="tiles"><div class="tile"><b id="t-cost">$270</b>parts, with GST</div><div class="tile"><b>~3 h</b>hands-on building</div><div class="tile"><b>0</b>holes in walls</div></div>
+    <div class="tiles"><div class="tile"><b id="t-cost">$270</b>parts, with GST, plus PiShop shipping</div><div class="tile"><b>~3 h</b>hands-on building</div><div class="tile"><b>0</b>holes in walls</div></div>
   </div>
 </section>
 
@@ -198,6 +198,15 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
   <div class="card"><div class="eyebrow">Your bill</div><div class="tiles" id="bill" style="margin-top:8px"></div>
   <p class="small soft" style="margin:.6em 0 0">Prices and stock read on each shop's page on the date shown. A working link is not stock: check before you pay, and check the model number matches.</p></div>
   <div class="parts" id="cards"></div>
+  <div class="card" id="tools" style="margin-top:14px"><div class="eyebrow">Also have ready (not in the bill)</div>
+  <ul style="margin:.5em 0 0;padding-left:1.2em">
+    <li>Small Phillips screwdriver, and tweezers for the nuts</li>
+    <li>2 zip ties, about 30 cm long and up to 4.8 mm wide</li>
+    <li>Rubbing alcohol (wall spot) and tape (nuts, gain knob)</li>
+    <li>Ruler or tape measure (mm side)</li>
+    <li>USB card reader, if the laptop has no SD slot</li>
+    <li>A 3D printer you can use (library or a friend's), with PLA or PETG</li>
+  </ul></div>
 </section>
 
 <section role="tabpanel" id="p-print" hidden>
@@ -226,58 +235,59 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 {"id":"psu","item":"Official 27W USB-C power supply","model":"SC1158","price":16.95,"shop":"PiShop.ca","url":"https://www.pishop.ca/product/raspberry-pi-27w-usb-c-power-supply-black-us/","stock":"In stock","status":"VERIFIED","why":"5.1 V / 5 A, 1.2 m cable. Phone chargers often can't supply enough."},
 {"id":"cooler","item":"Official Active Cooler","model":"SC1148","price":7.15,"shop":"PiShop.ca","url":"https://www.pishop.ca/product/raspberry-pi-active-cooler/","stock":"In stock","status":"VERIFIED","why":"Keeps the Pi from slowing down when it runs all day in a box."},
 {"id":"sd","item":"SanDisk MAX Endurance 64GB microSD","model":"SDSQQVR-064G-GN6IA","price":60.99,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B084CJ96GT","stock":"In stock","status":"VERIFIED","why":"Made for non-stop recording (rated 30,000 hours on the listing)."},
-{"id":"mic","item":"FIFINE K669B USB microphone","model":"K669B","price":39.09,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B0BVXQFCSB","stock":"In stock","status":"VERIFIED","why":"Plug-in USB mic, 20 Hz–20 kHz (maker's spec). Tape its gain knob once set."},
+{"id":"mic","item":"FIFINE K669B USB microphone","model":"K669B","price":39.09,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B0BVXQFCSB","stock":"In stock","status":"VERIFIED","why":"Plug-in USB mic, 20 Hz–20 kHz (maker's spec), cable fixed and about 1.8 m. Tape its gain knob once set."},
 {"id":"screws","item":"M2.5 stainless screw and nut set","model":"CF-848 (Amazon B096Z5CWGC)","price":15.66,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B096Z5CWGC","stock":"In stock","status":"VERIFIED","why":"Four 8 mm screws and four nuts hold the Pi on the case posts; four 10 mm screws hold the lid. This set has both lengths."},
-{"id":"strips","item":"Command Large Picture Hanging Strips","model":"B00EZ0QMQW","price":6.47,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B00EZ0QMQW","stock":"In stock","status":"VERIFIED","why":"Mounts the mic holder without holes. Rated 16 lb per pack; the mic and holder weigh about 190 g."}
+{"id":"strips","item":"Command Large Picture Hanging Strips","model":"17206C (Amazon B00EZ0QMQW)","price":6.47,"shop":"Amazon.ca","url":"https://www.amazon.ca/dp/B00EZ0QMQW","stock":"In stock","status":"VERIFIED","why":"Mounts the mic holder without holes. Rated 16 lb per pack; the mic and holder weigh about 200 g."}
 ]}
 </script>
 <script type="application/json" id="steps-data">
 [
 {"n":0,"title":"Optional: try the logger on your laptop first","time":"20 min","parts":[],"tested":true,"focus":[],
- "actions":["Install Python 3.12 on the laptop.","Set up the logger's folder and install its parts (the logger code is private for now; its README has the three set-up commands).","Run its self-test: <code>python -m pytest -q</code>.","Run a quiet-room measurement: <code>python -m noise_logger --calibrate</code>."],
- "check":"The self-test says all tests passed, and the quiet measurement prints a level and a saved threshold.","proof":"Done on 2026-11-21: 27 tests passed; two quiet measurements 0.0 dB apart."},
+ "actions":["Install Python 3.12 on the laptop.","Set up the logger's folder and install its parts (the logger code is private for now; its README has the three set-up commands).","Run its self-test: <code>.venv\\Scripts\\python -m pytest -q</code>.","Run a quiet-room measurement: <code>.venv\\Scripts\\python -m noise_logger --calibrate</code>."],
+ "check":"The self-test says all tests passed, and the quiet measurement prints a level and a saved threshold.","proof":"Done on 2026-11-21: all tests passed (38 at the last run); two quiet measurements 0.0 dB apart."},
 {"n":1,"title":"Order the parts","time":"30 min","parts":["all"],"tested":false,"focus":[],
- "actions":["Open each link in the Buy list.","Check the model number on the page matches the card.","Order the PiShop parts together, and the Amazon parts together."],
+ "actions":["Open each link in the Buy list.","Check the model number on the page matches the card.","Pick the right size: the <b>2GB board only</b> (not a kit; PiShop allows 1 per order), the <b>64 GB</b> memory card, and <b>Large, 4 pairs</b> of strips.","Order the PiShop parts together (shipping shows in its cart and is extra), and the Amazon parts together.","Check you have the small things listed under the parts (screwdriver, zip ties and so on)."],
  "check":"Both order confirmations list the same model numbers as the cards."},
-{"n":2,"title":"Check the parts when they arrive","time":"15 min","parts":["all"],"tested":false,"focus":["board","cooler","mic"],
+{"n":2,"title":"Check the parts when they arrive","time":"15 min","parts":["all"],"tested":false,"focus":["board", "cooler", "mic"],
  "actions":["Take a photo of each box's label.","Find SC1642 and 2GB on the Pi box.","Leave the Pi in its anti-static bag until step 6."],
  "check":"Every model number matches the Buy list."},
-{"n":3,"title":"Measure the real parts (before printing)","time":"10 min","parts":["pi","mic"],"tested":false,"focus":["board","ethernet","usb_stack_upper","mic"],
- "actions":["Measure the board: it should be 85 × 56 mm.","Measure the tallest part on the board (the USB ports).","Measure the mic's width and length.","Write the numbers down and send them in, so the print files can be adjusted if needed."],
- "check":"Board 85 × 56 mm (± 1 mm). If anything is off by more than 1 mm, wait before printing."},
-{"n":4,"title":"Print the case, lid and mic holder","time":"about 1 h of your time (plus print time)","parts":[],"tested":false,"focus":["case_base","case_lid","mic_cradle"],
+{"n":3,"title":"Measure the real parts (before printing)","time":"15 min","parts":["pi", "psu", "mic"],"tools":["Ruler or tape measure (mm side)"],"tested":false,"focus":["board", "ethernet", "usb_stack_upper", "mic"],
+ "actions":["Board: it should be 85 × 56 mm.","Tallest part on the board (the USB ports): about 16.4 mm above the board. One USB socket: about 14.6 mm wide.","Power plug: the plastic body behind the metal tip should be no bigger than 12.8 × 7.0 mm.","Power button: on the short edge opposite the USB ports, about 18 mm from the corner next to the power socket. It is the part that clicks.","Mic: width, length, where the cable comes out, and the shape of its base.","Write the numbers down. If one is off, have the print files changed before printing (the numbers are the table at the top of <code>scripts/make_parts.py</code>)."],
+ "check":"Board, USB ports and plug are within 1 mm of the numbers above. The mic holder is only printed after its seat is set to the real mic."},
+{"n":4,"title":"Print the case, lid and mic holder","time":"about 1 h of your time (plus print time)","parts":[],"tested":false,"focus":["case_base", "case_lid", "mic_cradle"],
  "actions":["Download the three files from Print files.","Print the case base first, open side up, with the settings listed there. No supports.","Set the bare Pi in it: it should drop in without force and sit flat on all 4 posts.","If it fits, print the lid. Print the mic holder after the mic is measured (step 3).","Remove any loose strings of plastic."],
  "check":"The case measures about 101 × 71 mm across the screw ears, and 94 × 64 mm across the box itself. Every socket shows fully in its window."},
-{"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tested":false,"focus":["sdcard"],
- "actions":["On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","In Customisation: set a name (noise-logger), your own username and password, your home Wi-Fi, and turn on SSH.","Write the card."],
+{"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tools":["USB card reader (only if the laptop has no SD slot)"],"tested":false,"focus":["sdcard"],
+ "actions":["Put the microSD card in the laptop (in its adapter, or in a USB card reader).","On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","Hostname: <code>noise-logger</code>. Localisation: your city and keyboard.","User: your own username and password (write them down). Wi-Fi: your home network.","Remote access: turn on SSH, with a password. Raspberry Pi Connect: leave it off.","Write the card."],
  "check":"Imager says the write finished successfully."},
-{"n":6,"title":"Put it together","time":"20 min","parts":["pi","cooler","screws"],"tested":false,"focus":["board","cooler","fan","case_base"],
- "actions":["Clip the Active Cooler onto the Pi (it is meant to stay on for good).","Push the microSD card into the slot under the board.","Drop 4 nuts into the hex holes under the case.","Set the Pi on the 4 posts and screw it down with 4 M2.5 screws.","Put the lid on with 4 screws into the corner ears."],
+{"n":6,"title":"Put it together","time":"30 min","parts":["pi", "cooler", "screws"],"tools":["Small Phillips screwdriver", "Tweezers (for the nuts)", "A bit of tape"],"tested":false,"focus":["board", "cooler", "fan", "case_base"],
+ "actions":["<b>Peel the backing paper off the thermal pads</b> under the Active Cooler.","Clip the cooler onto the Pi: press both spring pins until they click (it is meant to stay on for good).","Plug the cooler's cable into the small socket marked <b>FAN</b>.","Push the microSD card into the slot under the board.","Turn the case over, put 4 nuts into the six-sided pockets, and hold them in with a bit of tape.","Turn it back and lower the Pi straight down onto the 4 posts, with the USB and network sockets in the open side.","Screw it down with four <b>8 mm</b> screws, then take the tape off.","Put the lid on with four <b>10 mm</b> screws into the corner ears."],
  "warn":"Don't force a screw: plastic threads strip easily. Snug is enough.",
- "check":"Nothing rattles, and every port lines up with its opening."},
+ "check":"Nothing rattles, every socket shows in its opening, the fan cable is plugged in, and no paper is left under the cooler."},
 {"n":7,"title":"First start and connect from the laptop","time":"10 min","parts":["psu"],"tested":false,"focus":["usb-c_power"],
- "actions":["Plug in the power supply and wait 2 minutes.","On the laptop, open PowerShell and type: <code>ssh yourname@noise-logger.local</code>.","If that name isn't found, find the Pi in your router's device list and use its number instead."],
- "check":"You see the Pi's command prompt."},
-{"n":8,"title":"Install the logger","time":"20 min","parts":[],"tested":false,"focus":[],
- "actions":["Update the Pi: <code>sudo apt update && sudo apt full-upgrade</code>.","Install the sound parts: <code>sudo apt install python3-venv libportaudio2 alsa-utils git</code>.","Install the logger and run its self-test."],
- "check":"The self-test passes on the Pi."},
-{"n":9,"title":"Mic check and quiet-room measurement","time":"10 min","parts":["mic"],"tested":false,"focus":["mic"],
- "actions":["Plug in the mic.","List the mics: <code>arecord -l</code>.","Set the mic's gain knob once, then put tape over it.","Run the quiet-room measurement twice with the room quiet."],
- "check":"The two quiet measurements are within 2 dB of each other."},
-{"n":10,"title":"Mount the mic on the wall (no holes)","time":"15 min","parts":["strips","mic"],"tested":false,"focus":["mic_cradle","mic"],
- "actions":["Test one strip in a hidden spot first and peel it off after a day (paint check).","Clean the wall spot with rubbing alcohol and let it dry.","Stick the holder about 15 cm below the ceiling with 2 pairs of strips.","Wait an hour, then strap the mic in with zip ties, pointing up.","Keep the mic at least 1 m from the Pi's fan."],
+ "actions":["Plug in the power supply (push until it clicks fully in) and wait 2 minutes.","On the laptop, open PowerShell and type: <code>ssh yourname@noise-logger.local</code>.","The first time it asks if you are sure: type <code>yes</code>. Then type the Pi's password (nothing shows while you type).","If that name isn't found, find the Pi in your router's device list and use its number instead.","Check the memory: <code>free -h</code>. Check the power: <code>vcgencmd get_throttled</code>."],
+ "check":"You see the Pi's command prompt, <code>free -h</code> shows about 2 GB in total, and the power check says <code>throttled=0x0</code>."},
+{"n":8,"title":"Install the logger","time":"30 min","parts":[],"tested":false,"focus":[],
+ "actions":["On the laptop, open a second PowerShell window in the logger's folder: <code>cd $HOME\\noise-logger</code>.","Pack the code (it is private, so the Pi can't download it): <code>git archive --format=tar.gz -o ..\\noise-logger.tgz HEAD noise_logger scripts deploy tests requirements.txt pytest.ini</code>.","Copy it to the Pi: <code>scp ..\\noise-logger.tgz yourname@noise-logger.local:</code>.","In the Pi's window, unpack it: <code>mkdir -p noise-logger && tar xzf noise-logger.tgz -C noise-logger</code>.","Update the Pi: <code>sudo apt update && sudo apt full-upgrade -y</code>.","Install the logger and run its self-test: <code>cd ~/noise-logger && bash deploy/install.sh</code>."],
+ "check":"The self-test says all tests passed, and the last lines start with \"Installed. Next: calibrate\"."},
+{"n":9,"title":"Mount the mic on the wall (no holes)","time":"20 min (plus 1 hour for the strips to set)","parts":["strips", "mic"],"tools":["Rubbing alcohol", "2 zip ties, about 30 cm long and up to 4.8 mm wide"],"tested":false,"focus":["mic_cradle", "mic"],
+ "actions":["Lay out both cables before you stick anything: the mic's is fixed to it and about 1.8 m long, the power cable is 1.2 m. The Pi must reach both, with the mic at least 1 m from the Pi's fan.","Test one strip in a hidden spot first and peel it off after a day (paint check).","Clean the wall spot with rubbing alcohol and let it dry.","Stick the holder about 15 cm below the ceiling with 2 pairs of strips, side by side and upright.","Wait an hour.","Set the mic in its seat pointing up and drop its cable into the slot at the bottom.","Pull a zip tie through each pair of side wings and round the mic.","Plug the mic into a USB socket on the Pi."],
  "warn":"To remove a strip later, stretch it slowly straight down along the wall, never pull it towards you.",
  "check":"The mic points at the ceiling and the holder doesn't move when you tap it."},
+{"n":10,"title":"Mic level and quiet-room measurement","time":"15 min","parts":["mic"],"tools":["Tape (for the gain knob)"],"tested":false,"focus":["mic"],
+ "actions":["On the Pi, go to the logger's folder and list the mics: <code>cd ~/noise-logger && arecord -l</code>. Note the USB mic's card number.","Watch the level (put your card number in place of 2): <code>arecord -D plughw:2,0 -f S16_LE -r 48000 -c 1 -V mono /dev/null</code>.","Clap hard beside the mic and turn its gain knob until the loudest clap stays under about 90%. Press Ctrl+C, then put tape over the knob.","Tell the logger to use that mic: <code>.venv/bin/python -c \"from noise_logger import config as c; s=c.load(); s.mic_name='USB'; c.save(s)\"</code>.","With the room quiet and the Pi in its final place, run this twice (1 minute each): <code>.venv/bin/python -m noise_logger --calibrate</code>.","Turn the logger on, now and at every start: <code>sudo systemctl enable --now noise-logger noise-logger-web noise-logger-nightly.timer</code>."],
+ "warn":"If you ever move the mic or touch its knob, run the quiet-room measurement again, then <code>sudo systemctl restart noise-logger</code>.",
+ "check":"The two <code>median_dbfs</code> numbers are within 2 dB of each other, and <code>systemctl is-active noise-logger</code> says <code>active</code>."},
 {"n":11,"title":"Restart test and read the report on your phone","time":"10 min","parts":[],"tested":false,"focus":[],
- "actions":["Restart the Pi: <code>sudo reboot</code>.","Wait 2 minutes.","On your phone (on home Wi-Fi), open the report address shown in the logger's set-up notes."],
- "check":"The report opens on your phone after the restart, and new events appear."}
+ "actions":["Restart the Pi: <code>sudo reboot</code>.","Wait 2 minutes.","On your phone (on home Wi-Fi), open <code>http://noise-logger.local:8080</code>.","If the phone can't find that name, type <code>hostname -I</code> on the Pi and open <code>http://</code> + that number + <code>:8080</code>.","Stomp a few times and refresh the page."],
+ "check":"The report opens on your phone after the restart, and your stomps appear as new events."}
 ]
 </script>
 <script type="application/json" id="model-labels">
 {"board":"Raspberry Pi 5","cooler":"Active Cooler","usb-c_power":"USB-C power","micro-hdmi_0":"micro-HDMI","ethernet":"Ethernet","usb_stack_upper":"USB ports",
  "sdcard":"microSD (underneath)","case_base":"Printed case","case_lid":"Lid with vents","mic_cradle":"Mic wall holder","mic":"FIFINE mic"}
 </script>
-<script type="application/json" id="label-steps">{"board":6,"cooler":6,"usb-c_power":7,"micro-hdmi_0":3,"ethernet":3,"usb_stack_upper":3,"sdcard":5,"case_base":4,"case_lid":6,"mic_cradle":10,"mic":9}</script>
+<script type="application/json" id="label-steps">{"board":6,"cooler":6,"usb-c_power":7,"micro-hdmi_0":3,"ethernet":3,"usb_stack_upper":3,"sdcard":5,"case_base":4,"case_lid":6,"mic_cradle":9,"mic":10}</script>
 <script src="js/app2.js"></script>
 <script>/* iPhone browsers ignore user-scalable=no: cancel their pinch gestures (the 3D view uses pointer events, so it still zooms) */
 ["gesturestart","gesturechange","gestureend"].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();},{passive:false});});</script>

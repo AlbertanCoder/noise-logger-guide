@@ -40,7 +40,7 @@
       var all = 0, got = 0; buy.lines.forEach(function (p) { all += p.price; if (state.own[p.id]) got += p.price; });
       var g = 1 + buy.gst;
       document.getElementById("bill").innerHTML =
-        '<div class="tile"><b>' + money(all * g) + '</b>all parts, with GST</div><div class="tile"><b>' + money(got * g) +
+        '<div class="tile"><b>' + money(all * g) + '</b>all parts, with GST (PiShop shipping is extra)</div><div class="tile"><b>' + money(got * g) +
         '</b>bought so far</div><div class="tile"><b>' + money((all - got) * g) + "</b>still to buy</div>";
       document.getElementById("t-cost").textContent = money(all * g);
       dashboard();
@@ -64,9 +64,9 @@
     // ---------- Build: step cards in the drone guide's format ----------
     var wrap = document.getElementById("steps");
     function need(s) {
-      if (!s.parts || !s.parts.length) return "Nothing new: just the laptop.";
-      if (s.parts[0] === "all") return "All the parts from the Buy list.";
-      return s.parts.map(function (id) { return NAMES[id] || id; }).join(" · ");
+      var list = !s.parts || !s.parts.length ? [] : s.parts[0] === "all" ? ["All the parts from the Buy list"] : s.parts.map(function (id) { return NAMES[id] || id; });
+      list = list.concat(s.tools || []);
+      return list.length ? list.join(" · ") : "Nothing new: just the laptop.";
     }
     steps.forEach(function (s) {
       var art = el("article", "step"); art.id = "step-" + s.n;

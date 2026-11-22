@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding="utf-8")
 ROOT = Path(__file__).resolve().parent.parent
 html = (ROOT / "index.html").read_text(encoding="utf-8")
 app = (ROOT / "js" / "app2.js").read_text(encoding="utf-8")
@@ -47,6 +48,40 @@ ok(m and abs(float(m.group(1)) - total) < 0.005, f"page total ${total:.2f} match
 steps = json.loads(re.search(r'id="steps-data">(.*?)</script>', html, re.S).group(1))
 ok(len(steps) == 12 and all(s["check"] and s["actions"] for s in steps), f"{len(steps)} steps, each with actions and a 'check it worked'")
 ok([s["n"] for s in steps if s["tested"]] == [0], "only the step actually done (step 0, laptop) is marked Tested")
+
+# ---- every step can be followed as written (audit B-01 to B-05, A-02 to A-05) ----
+T = {s["n"]: " ".join([s["title"]] + s["actions"] + [s.get("warn", ""), s["check"]] + s.get("tools", [])) for s in steps}
+by_title = {s["title"]: s["n"] for s in steps}
+mount = next((n for t, n in by_title.items() if t.startswith("Mount the mic")), 99)
+quiet = next((n for t, n in by_title.items() if "quiet-room" in t), -1)
+
+
+def has(n, *words):
+    miss = [w for w in words if w not in T.get(n, "")]
+    ok(not miss, f"step {n}: {', '.join(w[:38] for w in words)}" + (f" | MISSING {miss}" if miss else ""))
+
+
+has(0, r".venv\Scripts\python -m pytest")
+has(1, "2GB board only", "64 GB", "4 pairs", "shipping")
+has(3, "85 × 56", "16.4", "14.6", "12.8 × 7.0", "clicks", "cable comes out", "base")
+has(5, "card reader", "Localisation", "SSH")
+has(6, "thermal pads", "FAN", "8 mm", "10 mm", "straight down")
+has(7, "yes", "password", "free -h", "0x0")
+has(8, "git archive", r"scp ..\noise-logger.tgz", "tar xzf", "bash deploy/install.sh")
+ok(0 < mount < quiet, f"the mic is mounted (step {mount}) before its level and the quiet room are measured (step {quiet})")
+has(mount, "both cables", "rubbing alcohol" if "rubbing alcohol" in T.get(mount, "") else "Rubbing alcohol", "zip tie", "side by side")
+has(quiet, "arecord -l", "mic_name='USB'", ".venv/bin/python -m noise_logger --calibrate", "gain knob", "systemctl enable --now noise-logger noise-logger-web noise-logger-nightly.timer")
+has(11, "http://noise-logger.local:8080", "hostname -I")
+labels = json.loads(re.search(r'id="label-steps">(.*?)</script>', html, re.S).group(1))
+ok(labels["mic_cradle"] == mount and labels["mic"] == quiet, f"3D labels point to the right steps (holder {labels['mic_cradle']}, mic {labels['mic']})")
+ok(all((ROOT / "images" / "steps" / f"step-{s['n']}.jpg").exists() for s in steps), "a picture for every step")
+ok('id="tools"' in html and "zip ties" in html and "s.tools" in app, "the small things are listed on the Buy page and in each step's 'You will need'")
+ok("plus PiShop shipping" in html and "PiShop shipping is extra" in app, "both totals say PiShop shipping is extra")
+ok(not any(re.fullmatch(r"B0[0-9A-Z]{8}", l["model"]) for l in buy["lines"]), "every card shows the maker's model number, not only Amazon's")
+classic = (ROOT / "classic.html").read_text(encoding="utf-8")
+for block in ("buy-data", "steps-data", "model-labels", "label-steps"):
+    get = lambda t: json.loads(re.search(rf'id="{block}">(.*?)</script>', t, re.S).group(1))
+    ok(get(html) == get(classic), f"the classic page carries the same {block}")
 
 public = [ROOT / "index.html", ROOT / "classic.html", ROOT / "js" / "app.js", ROOT / "js" / "app2.js", ROOT / "js" / "viewer.js", ROOT / "README.md"]
 # generic words here; personal words come from a private file that is never published
