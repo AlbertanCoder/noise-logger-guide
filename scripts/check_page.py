@@ -114,7 +114,8 @@ manifest = (ROOT / "manifest.webmanifest").read_text(encoding="utf-8")
 stale = [w for w in ("FIFINE", "K669", "Active Cooler", "Command Large", "M2.5", "case_base.stl", "mic_cradle", 'data-tab="print"', "zip tie", "Print files", "print files", "X-ray")
          if w.lower() in (html + app + viewer + manifest).lower()]
 ok(not stale, f"nothing left from the old parts list or old button names ({stale})")
-ok("plus PiShop shipping" in html and "PiShop shipping is extra" in app and "Solen shipping" not in html + app, "both totals say shipping is extra")
+ok("all from Amazon" in html and "free delivery" in app and "PiShop shipping" not in html + app and "pishop.ca" not in html,
+   "both totals say all five parts come from Amazon; no PiShop link or shipping line is left (agreed 2026-11-22)")
 ok("Why this mic" in html and "below 100 Hz" in html and "Nobody has tested it on this ceiling yet" in html, "Buy says why this mic and what is unproven")
 ok("new and unused" in html and "can go back if" not in html, "the mic's return is described with Amazon's own condition (final audit FA-02)")
 faults = re.search(r"Fixed in the software on 2026-11-22, tested with made-up sound only</b>\s*<ul[^>]*>(.*?)</ul>", html, re.S)

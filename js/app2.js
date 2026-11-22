@@ -34,7 +34,7 @@
       var all = 0, got = 0; buy.lines.forEach(function (p) { all += p.price; if (state.own[p.id]) got += p.price; });
       all = withGst(all); got = withGst(got);
       document.getElementById("bill").innerHTML =
-        '<div class="tile"><b>' + money(all) + '</b>all parts, with GST (PiShop shipping is extra)</div><div class="tile"><b>' + money(got) +
+        '<div class="tile"><b>' + money(all) + '</b>all parts, with GST (Amazon showed free delivery)</div><div class="tile"><b>' + money(got) +
         '</b>bought so far</div><div class="tile"><b>' + money(all - got) + "</b>still to buy</div>";
       document.getElementById("t-cost").textContent = money(all);
       dashboard();
