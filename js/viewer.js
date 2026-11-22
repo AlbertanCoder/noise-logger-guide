@@ -182,7 +182,7 @@ $("b-grab").onclick = () => {
 // ---------- measurements drawn on the model (official numbers) ----------
 function buildMeasurements(s, num) {
   measureGroup = new THREE.Group(); measureGroup.visible = false; s.add(measureGroup);
-  const [bx, by] = num.board_corner_in_case_mm, z = 2 + 4 + 1.6 + 0.4; // board top: floor 2 + standoff 4 + board 1.6
+  const [bx, by] = num.board_corner_in_case_mm, z = num.board_top_z_mm + 0.4; // just above the board
   const ow = num.outer_mm[0];
   const mat = new THREE.LineBasicMaterial({ color: 0xc2571b });
   [{ a: [bx, by - 9, z], b: [bx + 85, by - 9, z], text: "85 mm (official)" },

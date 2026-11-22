@@ -163,13 +163,13 @@ nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;displa
 <section class="card" id="print">
   <h2>Print files</h2>
   <table>
-    <tr><th>File</th><th>Size (mm)</th><th>Supports</th></tr>
-    <tr><td><a href="print/case_base.stl" download>case_base.stl</a></td><td id="sz-case_base"></td><td>None (print open side up)</td></tr>
-    <tr><td><a href="print/case_lid.stl" download>case_lid.stl</a></td><td id="sz-case_lid"></td><td>None (flat)</td></tr>
-    <tr><td><a href="print/mic_cradle.stl" download>mic_cradle.stl</a></td><td id="sz-mic_cradle"></td><td>None (back flat on the bed)</td></tr>
+    <tr><th>File</th><th>Size (mm)</th><th>On the print bed</th></tr>
+    <tr><td><a href="print/case_base.stl" download>case_base.stl</a></td><td id="sz-case_base"></td><td>Open side up: the flat floor goes on the bed. No supports.</td></tr>
+    <tr><td><a href="print/case_lid.stl" download>case_lid.stl</a></td><td id="sz-case_lid"></td><td>Flat: either face. No supports.</td></tr>
+    <tr><td><a href="print/mic_cradle.stl" download>mic_cradle.stl</a></td><td id="sz-mic_cradle"></td><td>On its back: the flat plate goes on the bed. No supports.</td></tr>
   </table>
   <p>Settings: PLA or PETG · 0.2 mm layers · 20% infill · 3 walls · no supports. These are ordinary starting settings (the printer's own slicer profile for PLA is fine).</p>
-  <div class="warn"><b>Don't print yet.</b> Do step 3 first: measure the real Pi and mic. Some port sizes are typical values, not measured, and may need a small change.</div>
+  <div class="warn"><b>Don't print yet.</b> Do step 3 first: measure the real Pi, power plug and mic. Then print the case base on its own and set the bare Pi in it before printing the rest.</div>
 </section>
 
 <section class="card" id="how">
@@ -220,7 +220,7 @@ nav.tabs a{color:#fff;text-decoration:none;font-size:14px;min-height:56px;displa
  "check":"Board 85 × 56 mm (± 1 mm). If anything is off by more than 1 mm, wait before printing."},
 {"n":4,"title":"Print the case, lid and mic holder","time":"about 1 h of your time (plus print time)","parts":[],"tested":false,"focus":["case_base","case_lid","mic_cradle"],
  "actions":["Download the three files from Print files.","Print with the settings listed there, no supports.","Remove any loose strings of plastic."],
- "check":"The case measures about 100 × 70 mm across the screw ears, and 93 × 63 mm across the box itself."},
+ "check":"The case measures about 101 × 71 mm across the screw ears, and 94 × 64 mm across the box itself."},
 {"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tested":false,"focus":["sdcard"],
  "actions":["On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","In Customisation: set a name (noise-logger), your own username and password, your home Wi-Fi, and turn on SSH.","Write the card."],
  "check":"Imager says the write finished successfully."},

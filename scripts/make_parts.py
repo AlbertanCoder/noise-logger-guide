@@ -1,6 +1,6 @@
 """Builds the printable parts (STL) and the 3D model for the web page (GLB) from ONE table of numbers.
-Board numbers: official Raspberry Pi 5 + Active Cooler mechanical drawings (see checks/SOURCES.md).
-Numbers marked PROVISIONAL are typical connector sizes, not from the drawing: tape-check the real Pi before printing.
+Board numbers: official Raspberry Pi 5 + Active Cooler mechanical drawings, measured from their lines (board corner = 0, 0).
+Numbers marked PROVISIONAL are not in any drawing: measure the real part before printing.
 Run:  python scripts/make_parts.py      (needs: trimesh, manifold3d, numpy)"""
 import json
 from pathlib import Path
@@ -12,34 +12,43 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_PRINT, OUT_MODEL = ROOT / "print", ROOT / "models"
 
 # ---------------- numbers (mm) ----------------
-BOARD = dict(w=85.0, h=56.0, t=1.6)                    # 85 x 56 READ; thickness 1.6 PROVISIONAL (not in the drawing)
+BOARD = dict(w=85.0, h=56.0, t=1.41)                   # 85 x 56 READ; thickness 1.41 measured on the side view
 HOLES = [(3.5, 3.5), (61.5, 3.5), (3.5, 52.5), (61.5, 52.5)]  # READ: 3.5 in, 58 x 49 apart
 HOLE_D = 2.7                                           # READ
-WALL, FLOOR, LID_T = 2.4, 2.0, 2.0
-CLEAR_L, CLEAR = 2.5, 1.0                              # left side needs 2.5: parts stick out 1.70 mm there (vector measurement)
-STANDOFF_H, HEADROOM = 4.0, 18.0                       # headroom >= cooler 13.7 + 3 air; tallest port UNKNOWN (tape check)
+WALL, FLOOR, LID_T = 2.4, 3.0, 2.0                     # floor 3.0: the 2.2 mm nut pockets must not cut through
+GAP_L, GAP_F, GAP_R, GAP_B = 3.0, 2.0, 1.0, 1.0        # left: card sticks out 1.73; front: sockets stick out 1.66, so they stay out of the wall
+STANDOFF_H, HEADROOM = 4.0, 18.0                       # headroom: USB sockets 16.44 + 1.56 spare (cooler 13.7)
+POST_R, POST_FOOT_R, POST_FOOT_H = 3.0, 4.0, 2.0       # posts flare to 8 mm where they meet the floor; 6 mm at the board (solder joints are close)
+NUT_FLAT, NUT_DEEP = 5.3, 2.2                          # M2.5 nut 5.0 mm across flats + 0.3 play
 EAR_R, SCREW_PILOT = 3.6, 2.2                          # lid ears with M2.5 self-tapping pilot holes
-INNER_W, INNER_H = CLEAR_L + BOARD["w"] + CLEAR, CLEAR + BOARD["h"] + CLEAR      # 88.5 x 58.0
-OUT_W, OUT_H = INNER_W + 2 * WALL, INNER_H + 2 * WALL                             # 93.3 x 62.8
-BX, BY = WALL + CLEAR_L, WALL + CLEAR                  # board's bottom-left corner inside the case
+INNER_W, INNER_H = GAP_L + BOARD["w"] + GAP_R, GAP_F + BOARD["h"] + GAP_B        # 89.0 x 59.0
+OUT_W, OUT_H = INNER_W + 2 * WALL, INNER_H + 2 * WALL                             # 93.8 x 63.8
+BX, BY = WALL + GAP_L, WALL + GAP_F                    # board's bottom-left corner inside the case
 Z_BOARD = FLOOR + STANDOFF_H                           # underside of the board
 Z_TOP = Z_BOARD + BOARD["t"]                           # top of the board
 WALL_TOP = Z_TOP + HEADROOM                            # lid sits here
-# connectors: (name, edge, centre along that edge from the board corner READ, width PROVISIONAL, height, colour)
-PORTS = [
-    ("USB-C power", "bottom", 11.2, 9.0, 3.2, "#c9ced3"),        # centre READ, height 3.2 READ
-    ("micro-HDMI 0", "bottom", 25.8, 7.0, 3.4, "#c9ced3"),       # centre READ, height 3.4 READ
-    ("micro-HDMI 1", "bottom", 39.2, 7.0, 3.4, "#c9ced3"),
-    ("Ethernet", "right", 10.2, 16.0, 13.5, "#c9ced3"),          # centre READ; size PROVISIONAL
-    ("USB stack (lower)", "right", 29.1, 13.5, 16.0, "#2f6fd6"),  # centre READ; colour order UNKNOWN
-    ("USB stack (upper)", "right", 47.0, 13.5, 16.0, "#30343a"),
-]
-PORT_DEPTH = {"bottom": 7.5, "right": 21.0}
-OVERHANG = {"bottom": 1.7, "right": 3.33}              # vector measurement of the official drawing
+SPARE = 1.5                                            # room round every socket, per side
+# sockets: centre along the edge, width, bottom and top above the board, how far it sticks out (all measured on the drawing)
+FRONT = {"usb-c_power": dict(c=11.185, w=8.75, z0=0.0, z1=3.2, out=1.31, d=7.5),
+         "micro-hdmi_0": dict(c=25.79, w=7.20, z0=-0.25, z1=3.4, out=1.66, d=7.5),
+         "micro-hdmi_1": dict(c=39.195, w=7.20, z0=-0.25, z1=3.4, out=1.66, d=7.5)}
+RIGHT = {"ethernet": dict(c=10.21, w=15.98, z1=13.9, out=2.98, d=21.0),
+         "usb_stack_lower": dict(c=29.07, w=14.60, z1=16.44, out=3.30, d=17.5),   # which stack is USB 3 is UNKNOWN: look at the board
+         "usb_stack_upper": dict(c=47.005, w=14.57, z1=16.44, out=3.30, d=17.5)}
+POWER_WINDOW = (13.0, 7.5)                             # the plug's plastic body must go in (USB-C allows 12.85 x 7 per plug)
+BUTTON = dict(y=18.4, z=1.70, d=5.5, out=0.46)         # the part that sticks out of the left edge; pressed with a pen
+LIGHT = dict(y=13.3, z=0.50, d=2.8)                    # status light (does not stick out)
+CARD = dict(c=28.10, w=9.98, z0=-3.00, z1=-2.01, out=1.73)  # memory card, under the board, left edge
+NOTCH = dict(y0=21.6, y1=38.6, z1=8.0, x1=5.0)         # finger notch for the card: wall and floor, open underneath
+GPIO_C = 32.49                                         # header centre from the board corner (the drawing's 29 starts at the screw hole)
 COOLER = dict(w=63.5, d=42.5, h=13.7, fan=30.0)        # READ
-SD_SLOT_Y = 28.0                                       # INFERRED (underneath, left short edge): PROVISIONAL
-POWER_BTN_Y = 13.3                                     # READ position (left edge)
-MIC = dict(d=45.0, l=150.0)                            # FIFINE body: UNKNOWN until taped; cradle fits ~30-55 mm with zip ties
+MIC = dict(d=45.0, l=150.0)                            # FIFINE body: PROVISIONAL until measured (build step 3)
+# mic holder: back plate, two saddles, two pairs of tie wings, shelf with an open cable slot
+PLATE = dict(w=60.0, h=100.0, t=3.0)                   # wall strips are about 93 mm long
+SHELF_T, CABLE_SLOT = 4.0, 12.0
+SADDLES, SADDLE_T = (16.0, 76.0), 8.0                  # heights up the plate
+WINGS = (36.0, 58.0)                                   # heights of the tie wings; their slots sit in front of the plate, clear of the strips
+WING = dict(t=4.0, h=14.0, out=11.0, slot=7.0, slot_h=4.0)
 
 
 def box(sx, sy, sz, x, y, z):
@@ -62,22 +71,31 @@ def diff(a, bs):
     return trimesh.boolean.difference([a] + list(bs), engine="manifold")
 
 
-def port_cutouts(margin=1.0):
+def round_hole_x(d, y, z):
+    """A round hole through the left wall, centred on (y, z)."""
+    m = trimesh.creation.cylinder(radius=d / 2, height=WALL + 2, sections=48)
+    m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
+    m.apply_translation((WALL / 2, y, z))
+    return m
+
+
+def cutouts():
     cuts = []
-    for name, edge, c, w, h, _ in PORTS:
-        z0 = Z_TOP - 0.5
-        if edge == "bottom":
-            cuts.append(box(w + 2 * margin, WALL + 4, h + 2 * margin, BX + c - w / 2 - margin, -1, z0))
-        else:
-            cuts.append(box(WALL + 4, w + 2 * margin, h + 2 * margin, OUT_W - WALL - 1, BY + c - w / 2 - margin, z0))
-    cuts.append(cyl(3.0, 1, 0, 0, 0))  # placeholder removed below
-    cuts.pop()
-    # power-button finger hole (left wall) and microSD slot under the board (left wall)
-    btn = trimesh.creation.cylinder(radius=3.0, height=WALL + 4, sections=32)
-    btn.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (0, 1, 0)))
-    btn.apply_translation((WALL / 2, BY + POWER_BTN_Y, Z_TOP + 1.0))
-    cuts.append(btn)
-    cuts.append(box(WALL + 4, 14.0, 3.6, -1, BY + SD_SLOT_Y - 7.0, FLOOR + 0.2))
+    for name, p in FRONT.items():                      # closed windows in the front wall only (never into the posts)
+        w, z0, z1 = p["w"] + 2 * SPARE, p["z0"] - SPARE, p["z1"] + SPARE
+        if name == "usb-c_power":
+            mid = (p["z0"] + p["z1"]) / 2
+            w, z0, z1 = POWER_WINDOW[0], mid - POWER_WINDOW[1] / 2, mid + POWER_WINDOW[1] / 2
+        cuts.append(box(w, WALL + 1.5, z1 - z0, BX + p["c"] - w / 2, -1.0, Z_TOP + z0))
+    # right wall: one window for all three sockets, open to the top, so the board drops straight in
+    y0 = min(p["c"] - p["w"] / 2 for p in RIGHT.values()) - SPARE
+    y1 = max(p["c"] + p["w"] / 2 for p in RIGHT.values()) + SPARE
+    cuts.append(box(WALL + 2, y1 - y0, HEADROOM + SPARE + 5, OUT_W - WALL - 0.5, BY + y0, Z_TOP - SPARE))
+    # left wall: button hole, status light hole, and the finger notch for the memory card (open underneath)
+    cuts.append(round_hole_x(BUTTON["d"], BY + BUTTON["y"], Z_TOP + BUTTON["z"]))
+    cuts.append(round_hole_x(LIGHT["d"], BY + LIGHT["y"], Z_TOP + LIGHT["z"]))
+    cuts.append(box(WALL + 1.5, NOTCH["y1"] - NOTCH["y0"], NOTCH["z1"] + 1, -1.0, BY + NOTCH["y0"], -1.0))
+    cuts.append(box(BX + NOTCH["x1"] + 1, NOTCH["y1"] - NOTCH["y0"], FLOOR + 1.5, -1.0, BY + NOTCH["y0"], -1.0))
     return cuts
 
 
@@ -85,22 +103,32 @@ def ears():
     return [(0, 0), (OUT_W, 0), (0, OUT_H), (OUT_W, OUT_H)]
 
 
+def post(x, y):
+    """A 6 mm post that flares to 8 mm where it meets the floor."""
+    foot = trimesh.convex.convex_hull(np.vstack([cyl(POST_FOOT_R, 0.01, x, y, FLOOR - 0.02).vertices,
+                                                 cyl(POST_R, 0.01, x, y, FLOOR + POST_FOOT_H - 0.01).vertices]))
+    return [foot, cyl(POST_R, STANDOFF_H + 0.01, x, y, FLOOR - 0.01)]
+
+
+def nut_pocket(x, y):
+    """Pocket for the nut, from below. Its ceiling closes in two small steps so it prints without supports."""
+    hexa = trimesh.creation.cylinder(radius=(NUT_FLAT / 2) / np.cos(np.pi / 6), height=NUT_DEEP + 1, sections=6)
+    hexa.apply_translation((x, y, (NUT_DEEP - 1) / 2))
+    return [hexa, box(HOLE_D, NUT_FLAT - 0.02, 0.2, x - HOLE_D / 2, y - NUT_FLAT / 2 + 0.01, NUT_DEEP - 0.001),
+            box(HOLE_D, HOLE_D, 0.2, x - HOLE_D / 2, y - HOLE_D / 2, NUT_DEEP + 0.198)]
+
+
 def make_base():
-    shell = box(OUT_W, OUT_H, WALL_TOP, 0, 0, 0)
+    shell_ = box(OUT_W, OUT_H, WALL_TOP, 0, 0, 0)
     cavity = box(INNER_W, INNER_H, WALL_TOP, WALL, WALL, FLOOR)
-    base = diff(shell, [cavity])
-    posts = [cyl(3.0, STANDOFF_H, BX + hx, BY + hy, FLOOR - 0.01) for hx, hy in HOLES]
+    base = diff(shell_, [cavity])
+    posts = [m for hx, hy in HOLES for m in post(BX + hx, BY + hy)]
     lugs = [cyl(EAR_R, WALL_TOP, ex, ey, 0) for ex, ey in ears()]
-    feet = [cyl(4.0, 1.5, x, y, -1.5) for x, y in [(10, 10), (OUT_W - 10, 10), (10, OUT_H - 10), (OUT_W - 10, OUT_H - 10)]]
-    base = union([base] + posts + lugs + feet)
-    holes = [cyl(HOLE_D / 2, STANDOFF_H + FLOOR + 3, BX + hx, BY + hy, -2) for hx, hy in HOLES]
-    nut_traps = []
-    for hx, hy in HOLES:  # M2.5 hex nut: 5.0 mm across flats + 0.3 mm play, 2.2 deep, from below
-        n = trimesh.creation.cylinder(radius=(5.3 / 2) / np.cos(np.pi / 6), height=2.2 + 1.5, sections=6)
-        n.apply_translation((BX + hx, BY + hy, -1.5 + (2.2 + 1.5) / 2))
-        nut_traps.append(n)
+    base = union([base] + posts + lugs)                # no printed feet: the whole floor sits on the print bed
+    holes = [cyl(HOLE_D / 2, STANDOFF_H + FLOOR + 3, BX + hx, BY + hy, -1) for hx, hy in HOLES]
+    pockets = [m for hx, hy in HOLES for m in nut_pocket(BX + hx, BY + hy)]
     pilots = [cyl(SCREW_PILOT / 2, 12, ex, ey, WALL_TOP - 12 + 0.01) for ex, ey in ears()]
-    return diff(base, holes + nut_traps + pilots + port_cutouts())
+    return diff(base, holes + pockets + pilots + cutouts())
 
 
 def make_lid():
@@ -112,21 +140,28 @@ def make_lid():
 
 
 def make_cradle():
-    back = box(60.0, 3.0, 80.0, -30.0, 0.0, 0.0)  # flat back for 2 pairs of Command strips
-    parts = [back]
+    """Upright: z up the wall, back of the plate at y = 0. Every side is straight, so it prints lying on its back with no supports."""
     r_in, r_out = MIC["d"] / 2, MIC["d"] / 2 + 4.0
-    for z in (12.0, 58.0):  # two half-rings hold the mic upright
-        ring = diff(cyl(r_out, 8.0, 0, 3.0 + r_out - 1, z), [cyl(r_in, 10.0, 0, 3.0 + r_out - 1, z - 1)])
-        cut_front = box(2 * r_out + 4, r_out + 4, 12, -r_out - 2, 3.0 + r_out - 1, z - 2)
-        parts.append(diff(ring, [cut_front]))
-    shelf = diff(cyl(r_out, 3.0, 0, 3.0 + r_out - 1, 0.0), [cyl(4.0, 5, 0, 3.0 + r_out - 1, -1)])  # cable hole in the floor
-    parts.append(shelf)
-    cradle = union(parts)
-    slots = []
-    for z in (12.0, 58.0):  # zip-tie slots through the back plate either side
-        for x in (-24.0, 20.0):
-            slots.append(box(4.0, 6.0, 3.0, x, -1.0, z + 2.5))
-    return diff(cradle, slots)
+    mic_y = PLATE["t"] + 3.0 + r_in                    # the mic's back stays 3 mm off the plate: the ties pass there
+    parts = [box(PLATE["w"], PLATE["t"], PLATE["h"], -PLATE["w"] / 2, 0, 0)]
+    for z in SADDLES:                                  # solid block with a half-round seat
+        parts.append(diff(box(2 * r_out, mic_y, SADDLE_T, -r_out, 0, z - SADDLE_T / 2),
+                          [cyl(r_in, SADDLE_T + 2, 0, mic_y, z - SADDLE_T / 2 - 1, 96)]))
+    parts.append(box(2 * r_out, mic_y + r_in, SHELF_T, -r_out, 0, 0))
+    for z in WINGS:
+        for x in (-PLATE["w"] / 2, PLATE["w"] / 2 - WING["t"]):
+            parts.append(box(WING["t"], PLATE["t"] + WING["out"], WING["h"], x, 0, z - WING["h"] / 2))
+    cuts = [box(CABLE_SLOT, r_in * 2 + 20, SHELF_T + 2, -CABLE_SLOT / 2, PLATE["t"] + 5.0, -1)]   # the cable drops in from the front
+    for z in WINGS:
+        cuts.append(box(PLATE["w"] + 2, WING["slot_h"], WING["slot"], -PLATE["w"] / 2 - 1, PLATE["t"], z - WING["slot"] / 2))
+    return diff(union(parts), cuts)
+
+
+def lie_on_back(mesh):
+    """Turns the upright holder so the back of its plate is on the print bed (x across, y up the wall, z away from the wall)."""
+    m = mesh.copy()
+    m.apply_transform(np.array([[-1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=float))
+    return m
 
 
 def colored(mesh, hex_color, name):
@@ -161,7 +196,6 @@ CHIPS = [("board__soc", 24.8, 14.2, 17.0, 17.0, "#a9afb6"), ("board__chip_ram", 
 MIPI = [(47.4, 0.5, 2.8, 16.2), (53.6, 0.5, 2.8, 16.2)]   # two camera/display connectors (raster-measured)
 POE = (59.5, 6.7, 3.7, 5.4)
 FAN_PLUG = (65.5, 40.4, 4.1, 7.0)
-ETH = (66.9, 2.3, 20.9, 15.7)                              # measured outline (x, y, depth, width); height 13.5 PROVISIONAL
 COOLER_AT = (1.5, 7.5)                                     # INFERRED: its diagonal pins over the board's two cooler holes
 
 
@@ -176,35 +210,35 @@ def pi_model():
                       [cyl(HOLE_D / 2, BOARD["t"] + 2, BX + hx, BY + hy, Z_BOARD - 1) for hx, hy in HOLES]), "#2f7d4f")
     for key, x, y, w, h, col in CHIPS:
         add(key, box(w, h, 1.2, BX + x, BY + y, Z_TOP), col)
-    # GPIO: black base + 40 gold pins, 2.54 mm pitch, centred on x = 29 (READ), rows 3.5 mm in from the top edge
-    add("gpio", box(51.0, 5.0, 2.5, BX + 29 - 25.5, BY + BOARD["h"] - 6.0, Z_TOP), "#202225")
+    # GPIO: black base + 40 gold pins, 2.54 mm pitch, rows 3.5 mm in from the top edge
+    add("gpio", box(50.8, 5.0, 2.5, BX + GPIO_C - 25.4, BY + BOARD["h"] - 6.0, Z_TOP), "#202225")
     for i in range(20):
         for j in range(2):
-            px = BX + 29 - 24.13 + i * 2.54
+            px = BX + GPIO_C - 24.13 + i * 2.54
             py = BY + BOARD["h"] - 3.5 + (j - 0.5) * 2.54
             add("gpio__pin", box(0.64, 0.64, 6.0, px - 0.32, py - 0.32, Z_TOP + 2.5), "#d4a940")
-    # bottom-edge connectors (centres READ; outer sizes PROVISIONAL)
-    add("usb-c_power", shell(9.0, 7.5, 3.2, BX + 11.2 - 4.5, BY - OVERHANG["bottom"], Z_TOP, "-y"), "#c9ced3")
-    add("micro-hdmi_0", shell(7.0, 7.5, 3.4, BX + 25.8 - 3.5, BY - OVERHANG["bottom"], Z_TOP, "-y"), "#c9ced3")
-    add("micro-hdmi_1", shell(7.0, 7.5, 3.4, BX + 39.2 - 3.5, BY - OVERHANG["bottom"], Z_TOP, "-y"), "#c9ced3")
-    # right edge: Ethernet (measured outline) + two USB stacks with coloured tongues (USB 3 blue, USB 2 black)
-    ex, ey, ed, ew = ETH
-    add("ethernet", shell(ed, ew, 13.5, BX + ex, BY + ey, Z_TOP, "+x"), "#c9ced3")
-    add("ethernet__led_g", box(0.6, 2.0, 1.2, BX + ex + ed, BY + ey + 1.5, Z_TOP + 11.0), "#2ecc71")
-    add("ethernet__led_y", box(0.6, 2.0, 1.2, BX + ex + ed, BY + ey + ew - 3.5, Z_TOP + 11.0), "#f1c40f")
-    for key, cy_, tongue in (("usb_stack_lower", 29.1, "#2f6fd6"), ("usb_stack_upper", 47.0, "#1c1e21")):
-        sx, sw = BOARD["w"] - 17.5 + OVERHANG["right"], 13.5
-        add(key, shell(17.5, sw, 16.0, BX + sx, BY + cy_ - sw / 2, Z_TOP, "+x"), "#c9ced3")
-        for zz in (Z_TOP + 2.2, Z_TOP + 9.8):
-            add(key + "__tongue", box(14.0, sw - 4.0, 1.8, BX + sx + 2.5, BY + cy_ - sw / 2 + 2.0, zz + 1.6), tongue)
+    # front-edge and right-edge sockets: the same table the windows are cut from
+    for key, f in FRONT.items():
+        z0 = max(f["z0"], 0.0)
+        add(key, shell(f["w"], f["d"], f["z1"] - z0, BX + f["c"] - f["w"] / 2, BY - f["out"], Z_TOP + z0, "-y"), "#c9ced3")
+    for key, r in RIGHT.items():
+        x0, y0 = BX + BOARD["w"] + r["out"] - r["d"], BY + r["c"] - r["w"] / 2
+        add(key, shell(r["d"], r["w"], r["z1"], x0, y0, Z_TOP, "+x"), "#c9ced3")
+        if key == "ethernet":
+            add("ethernet__led_g", box(0.6, 2.0, 1.2, x0 + r["d"], y0 + 1.5, Z_TOP + 11.0), "#2ecc71")
+            add("ethernet__led_y", box(0.6, 2.0, 1.2, x0 + r["d"], y0 + r["w"] - 3.5, Z_TOP + 11.0), "#f1c40f")
+        else:                                          # USB 3 blue, USB 2 black
+            for zz in (Z_TOP + 2.2, Z_TOP + 9.8):
+                add(key + "__tongue", box(14.0, r["w"] - 4.0, 1.8, x0 + 2.5, y0 + 2.0, zz + 1.6), "#2f6fd6" if key == "usb_stack_lower" else "#1c1e21")
     for x, y, w, h in MIPI:
         add("mipi", box(w, h, 4.0, BX + x, BY + y, Z_TOP), "#e8e3d6")
     add("poe", box(POE[2], POE[3], 5.5, BX + POE[0], BY + POE[1], Z_TOP), "#202225")
     add("fan_plug", box(FAN_PLUG[2], FAN_PLUG[3], 4.0, BX + FAN_PLUG[0], BY + FAN_PLUG[1], Z_TOP), "#f2efe6")
-    add("power_button", box(2.5, 3.0, 2.0, BX - 1.2, BY + POWER_BTN_Y - 1.5, Z_TOP), "#202225")
-    add("pcie", box(2.5, 14.0, 2.5, BX - 0.5, BY + 26.0, Z_TOP), "#202225")
-    add("board__led_pwr", box(1.6, 1.0, 0.8, BX + 1.0, BY + 18.4, Z_TOP), "#7a1b1b")
-    add("sdcard", box(15.0, 11.0, 1.0, BX - 2.5, BY + SD_SLOT_Y - 5.5, Z_BOARD - 1.4), "#3b82c4")
+    add("power_button", box(2.54, 4.23, 2.58, BX + 0.39, BY + BUTTON["y"] - 2.12, Z_TOP), "#202225")
+    add("power_button__cap", box(0.85, 2.01, 1.97, BX - BUTTON["out"], BY + BUTTON["y"] - 1.0, Z_TOP + 0.71), "#d8d8d8")
+    add("board__led_pwr", box(1.48, 2.01, 0.99, BX + 0.14, BY + LIGHT["y"] - 1.0, Z_TOP), "#7a1b1b")
+    add("pcie", box(3.05, 10.4, 2.5, BX + 1.15, BY + 24.9, Z_TOP), "#202225")
+    add("sdcard", box(15.0, CARD["w"], CARD["z1"] - CARD["z0"], BX - CARD["out"], BY + CARD["c"] - CARD["w"] / 2, Z_TOP + CARD["z0"]), "#3b82c4")
     # Active Cooler: base plate, fins on the left, blower housing on the right (30 x 30 READ), fan blades (spin node)
     cx0, cy0 = BX + COOLER_AT[0], BY + COOLER_AT[1]
     zc = Z_TOP + 1.6
@@ -226,9 +260,9 @@ def pi_model():
 def mic_model(x, y):
     """FIFINE K669B, approximate shape: body, grille head with rings, gain knob. Sizes to confirm with a tape (step 3)."""
     r, L = MIC["d"] / 2 - 2, MIC["l"]
-    parts = [("mic", cyl(r, L * 0.72, x, y, 3.0), "#1d1f22"), ("mic__grille", cyl(r + 1.0, L * 0.28, x, y, 3.0 + L * 0.72), "#4a4e54")]
+    parts = [("mic", cyl(r, L * 0.72, x, y, SHELF_T), "#1d1f22"), ("mic__grille", cyl(r + 1.0, L * 0.28, x, y, SHELF_T + L * 0.72), "#4a4e54")]
     for k in range(6):
-        parts.append(("mic__ring", cyl(r + 1.3, 0.8, x, y, 3.0 + L * 0.72 + 4 + k * 6.5), "#2b2e33"))
+        parts.append(("mic__ring", cyl(r + 1.3, 0.8, x, y, SHELF_T + L * 0.72 + 4 + k * 6.5), "#2b2e33"))
     knob = trimesh.creation.cylinder(radius=4.0, height=5.0, sections=24)
     knob.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (1, 0, 0)))
     knob.apply_translation((x, y + r + 2.0, 3.0 + L * 0.45))
@@ -243,7 +277,7 @@ def main():
     lid_placed = lid.copy()
     lid_placed.apply_translation((0, 0, WALL_TOP))
     report = {}
-    for name, m in [("case_base", base), ("case_lid", lid), ("mic_cradle", cradle)]:
+    for name, m in [("case_base", base), ("case_lid", lid), ("mic_cradle", lie_on_back(cradle))]:   # each file lies the way it prints
         m.export(OUT_PRINT / f"{name}.stl")
         ext = m.bounds[1] - m.bounds[0]
         report[name] = {"size_mm": [round(float(v), 2) for v in ext], "watertight": bool(m.is_watertight),
@@ -262,16 +296,20 @@ def main():
                    ("case_lid", colored(lid_placed, "#e8e2d4", "Printed lid"))] + pi_model():
         put(key, m)
     cr = colored(cradle, "#e8e2d4", "Mic wall holder")
-    cr.apply_translation((OUT_W + 60, OUT_H / 2, 0))
+    turn = trimesh.transformations.rotation_matrix(np.pi, (0, 0, 1))      # seat and tie slots face the front of the 3D view
+    turn[:3, 3] = (OUT_W + 60, OUT_H, 0)
+    cr.apply_transform(turn)
     scene.add_geometry(cr, node_name="mic_cradle", geom_name="mic_cradle")
     COLOR_MAP["mic_cradle"] = "#e8e2d4"
-    for key, m in mic_model(OUT_W + 60, OUT_H / 2 + 3 + MIC["d"] / 2 + 3):
+    for key, m in mic_model(0, PLATE["t"] + 3 + MIC["d"] / 2):
+        m.apply_transform(turn)
         put(key, m)
     scene.export(OUT_MODEL / "noise-logger.glb")
     (OUT_MODEL / "colors.json").write_text(json.dumps(COLOR_MAP, indent=0))
     numbers = {"outer_mm": [round(OUT_W, 2), round(OUT_H, 2), round(WALL_TOP + LID_T, 2)],
                "inner_mm": [round(INNER_W, 2), round(INNER_H, 2)], "hole_spacing_mm": [58.0, 49.0],
-               "board_corner_in_case_mm": [BX, BY], "parts": report}
+               "board_corner_in_case_mm": [round(BX, 2), round(BY, 2)], "board_top_z_mm": round(Z_TOP, 2), "floor_mm": FLOOR,
+               "parts": report}
     (ROOT / "models" / "numbers.json").write_text(json.dumps(numbers, indent=2))
     print(json.dumps(numbers, indent=2))
 

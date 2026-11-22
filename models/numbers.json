@@ -1,48 +1,50 @@
 {
   "outer_mm": [
-    93.3,
-    62.8,
-    27.6
+    93.8,
+    63.8,
+    28.41
   ],
   "inner_mm": [
-    88.5,
-    58.0
+    89.0,
+    59.0
   ],
   "hole_spacing_mm": [
     58.0,
     49.0
   ],
   "board_corner_in_case_mm": [
-    4.9,
-    3.4
+    5.4,
+    4.4
   ],
+  "board_top_z_mm": 8.41,
+  "floor_mm": 3.0,
   "parts": {
     "case_base": {
       "size_mm": [
-        100.5,
-        70.0,
-        27.1
+        101.0,
+        71.0,
+        26.41
       ],
       "watertight": true,
-      "volume_cm3": 29.6
+      "volume_cm3": 34.4
     },
     "case_lid": {
       "size_mm": [
-        100.5,
-        70.0,
+        101.0,
+        71.0,
         2.0
       ],
       "watertight": true,
-      "volume_cm3": 10.5
+      "volume_cm3": 10.7
     },
     "mic_cradle": {
       "size_mm": [
         60.0,
-        55.0,
-        80.0
+        100.0,
+        51.0
       ],
       "watertight": true,
-      "volume_cm3": 25.4
+      "volume_cm3": 37.0
     }
   }
 }

@@ -202,13 +202,13 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 
 <section role="tabpanel" id="p-print" hidden>
   <h2>Print files</h2>
-  <div class="note safety"><b>⚠ Don't print yet.</b> Do Build step 3 first: measure the real Pi and mic. Some port sizes are typical values and may need a small change.</div>
-  <div class="card"><table><tr><th>File</th><th>Size (mm)</th><th>Supports</th><th></th></tr>
-    <tr><td><a href="print/case_base.stl" download>case_base.stl</a></td><td id="sz-case_base"></td><td>None</td><td><label class="own"><input type="checkbox" data-printed="case_base"> Printed</label></td></tr>
-    <tr><td><a href="print/case_lid.stl" download>case_lid.stl</a></td><td id="sz-case_lid"></td><td>None</td><td><label class="own"><input type="checkbox" data-printed="case_lid"> Printed</label></td></tr>
-    <tr><td><a href="print/mic_cradle.stl" download>mic_cradle.stl</a></td><td id="sz-mic_cradle"></td><td>None</td><td><label class="own"><input type="checkbox" data-printed="mic_cradle"> Printed</label></td></tr></table>
-  <p>Settings: PLA or PETG · 0.2 mm layers · 20% infill · 3 walls · no supports (the printer's own PLA profile is fine).</p></div>
-  <div class="note info">How accurate? The 4 screw holes in the case measure <b>58.00 × 49.00 mm</b> apart, the same as the official Raspberry Pi drawing (checked by script on the print file itself).</div>
+  <div class="note safety"><b>⚠ Don't print yet.</b> Do Build step 3 first: measure the real Pi, power plug and mic. Then print <b>the case base on its own</b> (about 40 g of plastic) and set the bare Pi in it. If it drops in without force and sits flat on all 4 posts, print the lid. Print the mic holder last: its seat is a guess (45 mm) until the mic is measured.</div>
+  <div class="card"><table><tr><th>File</th><th>Size (mm)</th><th>On the print bed</th><th></th></tr>
+    <tr><td><a href="print/case_base.stl" download>case_base.stl</a></td><td id="sz-case_base"></td><td>Open side up: the flat floor goes on the bed. No supports.</td><td><label class="own"><input type="checkbox" data-printed="case_base"> Printed</label></td></tr>
+    <tr><td><a href="print/case_lid.stl" download>case_lid.stl</a></td><td id="sz-case_lid"></td><td>Flat: either face. No supports.</td><td><label class="own"><input type="checkbox" data-printed="case_lid"> Printed</label></td></tr>
+    <tr><td><a href="print/mic_cradle.stl" download>mic_cradle.stl</a></td><td id="sz-mic_cradle"></td><td>On its back: the flat plate goes on the bed. No supports.</td><td><label class="own"><input type="checkbox" data-printed="mic_cradle"> Printed</label></td></tr></table>
+  <p>Settings: PLA or PETG · 0.2 mm layers · 20% infill · 3 walls · no supports (the printer's own PLA profile is fine). Each file already lies the right way up: don't turn it. At a library, ask first: bed size (the largest part is 101 × 71 mm), time limit and cost.</p></div>
+  <div class="note info">How accurate? The 4 screw holes in the case measure <b>58.00 × 49.00 mm</b> apart, the same as the official Raspberry Pi drawing. Every socket has at least 1.5 mm to spare on each side and the board drops straight in (all checked by script on the print files themselves). The drawing calls its own sizes approximate, so the first print is still a test.</div>
 </section>
 
 </main>
@@ -246,8 +246,8 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
  "actions":["Measure the board: it should be 85 × 56 mm.","Measure the tallest part on the board (the USB ports).","Measure the mic's width and length.","Write the numbers down and send them in, so the print files can be adjusted if needed."],
  "check":"Board 85 × 56 mm (± 1 mm). If anything is off by more than 1 mm, wait before printing."},
 {"n":4,"title":"Print the case, lid and mic holder","time":"about 1 h of your time (plus print time)","parts":[],"tested":false,"focus":["case_base","case_lid","mic_cradle"],
- "actions":["Download the three files from Print files.","Print with the settings listed there, no supports.","Remove any loose strings of plastic."],
- "check":"The case measures about 100 × 70 mm across the screw ears, and 93 × 63 mm across the box itself."},
+ "actions":["Download the three files from Print files.","Print the case base first, open side up, with the settings listed there. No supports.","Set the bare Pi in it: it should drop in without force and sit flat on all 4 posts.","If it fits, print the lid. Print the mic holder after the mic is measured (step 3).","Remove any loose strings of plastic."],
+ "check":"The case measures about 101 × 71 mm across the screw ears, and 94 × 64 mm across the box itself. Every socket shows fully in its window."},
 {"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tested":false,"focus":["sdcard"],
  "actions":["On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","In Customisation: set a name (noise-logger), your own username and password, your home Wi-Fi, and turn on SSH.","Write the card."],
  "check":"Imager says the write finished successfully."},
