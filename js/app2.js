@@ -1,11 +1,11 @@
-/* Option 6 preview: the drone guide's layout (Home · Build · 3D · Buy · Print) with the noise logger's content.
+/* The drone guide's layout (Home · Build · 3D · Buy) with the noise logger's content.
    Parts, steps and 3D labels are read from index.html. */
 (function () {
   "use strict";
   var STORE = "noise-logger-guide-v1"; // same storage as the live guide: ticks carry over
   function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
   function save(st) { try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) { /* private mode */ } }
-  var state = load(); state.own = state.own || {}; state.done = state.done || {}; state.open = state.open || null; state.printed = state.printed || {};
+  var state = load(); state.own = state.own || {}; state.done = state.done || {}; state.open = state.open || null;
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function money(v) { return "$" + v.toFixed(2); }
 
@@ -28,13 +28,15 @@
 
     // ---------- Buy ----------
     var NAMES = {}; buy.lines.forEach(function (p) { NAMES[p.id] = p.item; });
+    var REAL = steps.filter(function (s) { return s.n !== 0; }); // step 0 is optional: not counted
+    function withGst(v) { return Math.round(v * (1 + buy.gst) * 100) / 100; } // whole cents, so the three bill numbers add up
     function bill() {
       var all = 0, got = 0; buy.lines.forEach(function (p) { all += p.price; if (state.own[p.id]) got += p.price; });
-      var g = 1 + buy.gst;
+      all = withGst(all); got = withGst(got);
       document.getElementById("bill").innerHTML =
-        '<div class="tile"><b>' + money(all * g) + '</b>all parts, with GST (PiShop and Solen shipping are extra)</div><div class="tile"><b>' + money(got * g) +
-        '</b>bought so far</div><div class="tile"><b>' + money((all - got) * g) + "</b>still to buy</div>";
-      document.getElementById("t-cost").textContent = money(all * g);
+        '<div class="tile"><b>' + money(all) + '</b>all parts, with GST (PiShop shipping is extra)</div><div class="tile"><b>' + money(got) +
+        '</b>bought so far</div><div class="tile"><b>' + money(all - got) + "</b>still to buy</div>";
+      document.getElementById("t-cost").textContent = money(all);
       dashboard();
     }
     var cards = document.getElementById("cards");
@@ -43,7 +45,7 @@
       c.appendChild(el("b", null, p.item));
       c.appendChild(el("span", "small soft", "Model #: <b>" + p.model + "</b>"));
       c.appendChild(el("span", "price", money(p.price)));
-      c.appendChild(el("a", null, "Buy at " + p.shop + " ↗")); c.lastChild.href = p.url; c.lastChild.target = "_blank"; c.lastChild.rel = "noopener";
+      c.appendChild(el("a", "btn", "Buy at " + p.shop + " ↗")); c.lastChild.href = p.url; c.lastChild.target = "_blank"; c.lastChild.rel = "noopener"; // a 44 px button, not a 26 px line of text
       c.appendChild(el("span", "small", p.stock + " · checked " + buy.checkedOn + ' <span class="badge">' + p.status + "</span>"));
       c.appendChild(el("span", "small soft", p.why));
       var lab = el("label", "own"), box = document.createElement("input"); box.type = "checkbox"; box.checked = !!state.own[p.id];
@@ -81,10 +83,10 @@
       }
       still.addEventListener("click", go3d); watch.addEventListener("click", go3d);
       body.appendChild(still); body.appendChild(watch);
+      if (s.warn) body.appendChild(el("div", "note safety", "<b>⚠ Read this first:</b> " + s.warn)); // before the actions it warns about
       body.appendChild(el("details", null, "<summary>You will need</summary><div>" + need(s) + "</div>"));
       body.appendChild(el("details", null, "<summary>Show the written steps</summary><div><ol>" +
         s.actions.map(function (a) { return "<li>" + a + "</li>"; }).join("") + "</ol></div>"));
-      if (s.warn) body.appendChild(el("div", "note safety", "<b>⚠ Safety:</b> " + s.warn));
       body.appendChild(el("details", null, "<summary>✓ Before you go on</summary><div>" + s.check + (s.proof ? '<p class="small soft">Proof: ' + s.proof + "</p>" : "") + "</div>"));
       var lab = el("label", "done"), box = document.createElement("input"); box.type = "checkbox"; box.checked = !!state.done[s.n];
       box.addEventListener("change", function () { state.done[s.n] = box.checked; save(state); progress(); dashboard(); if (box.checked) openNext(); });
@@ -94,9 +96,9 @@
     function nextStep() { for (var i = 0; i < steps.length; i++) if (!state.done[steps[i].n] && steps[i].n !== 0) return steps[i]; return null; }
     function openNext() { var n = nextStep(); document.querySelectorAll(".step").forEach(function (a) { a.classList.toggle("open", !!n && a.id === "step-" + n.n); }); }
     function progress() {
-      var done = steps.filter(function (s) { return state.done[s.n]; }).length;
-      document.getElementById("progress-text").textContent = done + " of " + steps.length + " steps done";
-      document.getElementById("progress-bar").style.width = (100 * done / steps.length) + "%";
+      var done = REAL.filter(function (s) { return state.done[s.n]; }).length;
+      document.getElementById("progress-text").textContent = done + " of " + REAL.length + " steps done";
+      document.getElementById("progress-bar").style.width = (100 * done / REAL.length) + "%";
       steps.forEach(function (s) { var n = document.getElementById("num-" + s.n); n.textContent = state.done[s.n] ? "✓" : s.n; n.classList.toggle("ok", !!state.done[s.n]); });
       var nx = nextStep();
       document.getElementById("next-title").textContent = nx ? "Next: Step " + nx.n + " · " + nx.title : "All steps done — well done!";
@@ -110,24 +112,25 @@
     lo.addEventListener("input", function () { state.leftoff = lo.value; save(state); });
     progress(); openNext();
 
-    // ---------- Home dashboard (Option 4's progress cards) ----------
+    // ---------- Home dashboard (progress cards) ----------
     function dashboard() {
-      var g = 1 + buy.gst, left = 0;
-      var bought = buy.lines.filter(function (p) { if (!state.own[p.id]) left += p.price; return state.own[p.id]; }).length;
-      var done = steps.filter(function (s) { return state.done[s.n]; }).length;
+      var all = 0, got = 0;
+      var bought = buy.lines.filter(function (p) { all += p.price; if (state.own[p.id]) got += p.price; return state.own[p.id]; }).length;
+      var left = withGst(all) - withGst(got);
+      var done = REAL.filter(function (s) { return state.done[s.n]; }).length;
       var set = function (id, t) { var e = document.getElementById(id); if (e) e.textContent = t; };
-      set("dc-buy", bought + " / " + buy.lines.length); set("dc-buy2", left > 0 ? money(left * g) + " still to buy" : "all bought");
-      set("dc-mic", state.done[3] ? "Passed" : "Not yet"); set("dc-build", done + " / " + steps.length);
+      set("dc-buy", bought + " / " + buy.lines.length); set("dc-buy2", left > 0.004 ? money(left) + " still to buy" : "all bought");
+      set("dc-mic", state.done[3] ? "Passed" : "Not yet"); set("dc-build", done + " / " + REAL.length);
       var nx = nextStep(); set("dc-build2", nx ? "next: step " + nx.n : "all done");
       var ready = !!state.done[11]; set("dc-use", ready ? "Ready" : "Use it"); set("dc-use2", ready ? "open the phone page" : "after step 11");
-      [["dc-buy", bought === buy.lines.length], ["dc-mic", !!state.done[3]], ["dc-build", done === steps.length], ["dc-use", ready]].forEach(function (x) {
+      [["dc-buy", bought === buy.lines.length], ["dc-mic", !!state.done[3]], ["dc-build", done === REAL.length], ["dc-use", ready]].forEach(function (x) {
         var e = document.getElementById(x[0]); if (e) e.parentNode.classList.toggle("ok", x[1]);
       });
       // overall: buying 20%, building 80%
-      var pct = Math.round(20 * bought / buy.lines.length + 80 * done / steps.length);
+      var pct = Math.round(20 * bought / buy.lines.length + 80 * done / REAL.length);
       var ring = document.getElementById("ring"); if (ring) ring.style.setProperty("--p", pct);
       set("ring-pct", pct + "%");
-      set("ring-text", pct === 0 ? "Nothing ticked yet: start with Buy." : pct >= 100 ? "Built and running. Well done!" :
+      set("ring-text", pct === 0 ? "Nothing ticked yet: start with step 1." : pct >= 100 ? "Built and running. Well done!" :
         (nx ? "Next: Step " + nx.n + " · " + nx.title : "Keep going"));
     }
     dashboard();

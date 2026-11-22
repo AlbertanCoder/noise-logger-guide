@@ -12,18 +12,19 @@ const PI = ["board", "gpio", "usb-c_power", "micro-hdmi_0", "micro-hdmi_1", "eth
   "mipi", "poe", "fan_plug", "power_button", "pcie", "sdcard", "heatsink", "fan"];
 const TO_CONFIRM = ["mic"]; // the mic's shape is drawn by eye, so it is slightly see-through
 const CASE = ["case_base", "case_frame", "case_lid"];
-const OVERVIEW_LABELS = ["case_lid", "mic", "shelf"];
+const OVERVIEW_LABELS = ["case_lid", "mic", "shelf", "cable"];
 const EXPLODED_LABELS = ["case_lid", "fan", "heatsink", "board", "case_base"];
 const BOX_PARTS = [...CASE, ...PI];
 // camera direction per view (after loading, model Z is screen-up)
 const VIEWS = { overview: [0.25, 0.8, 1.0], top: [0.001, 1, 0.02], front: [0.1, 0.45, 1.0], under: [-0.6, -0.35, 0.8], mic: [0.6, 0.35, 1.0] };
-const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under"],
-  6: ["front", "assemble"], 7: ["front", "power"], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
+// view, extra, and (optional) the parts the camera frames
+const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under", null, ["case_base", "board"]],
+  6: ["front", "assemble"], 7: ["front", "power", ["case_base", "case_lid"]], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
 const DEFAULT_CAPTION = caption.textContent;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 host.appendChild(renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0xeef1ee);
 scene.add(new THREE.HemisphereLight(0xffffff, 0xbdb6a6, 1.5));
@@ -39,7 +40,7 @@ function setTouches() { controls.touches = { ONE: grabbed ? THREE.TOUCH.ROTATE :
 setTouches();
 host.addEventListener("wheel", (e) => { if (!grabbed && !e.ctrlKey) e.stopPropagation(); }, { capture: true });
 const root = new THREE.Group(); scene.add(root);
-const groups = {}, home = new Map(), labelEls = {};
+const groups = {}, home = new Map(), labelEls = {}, anchors = {};
 let spin = false, exploded = false, xray = false, labelsOn = true, power = false, measure = false, focus = null, topView = false;
 let fanPivot = null, measureGroup = null, fitSphere = null, stepIdx = 0, tween = null, partTween = null, gltfScene = null;
 const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -87,9 +88,22 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
       if (!groups[k]) return;
       const b = document.createElement("button");
       b.className = "vlabel"; b.type = "button"; b.innerHTML = LABELS[k] + '<i class="dot"></i>';
-      b.addEventListener("click", () => { const st = $("step-" + LABEL_STEP[k]); if (st) st.scrollIntoView({ behavior: "smooth" }); });
+      b.addEventListener("click", () => { // a label opens its step on the Build tab
+        const st = $("step-" + LABEL_STEP[k]), tab = document.querySelector('[role="tab"][data-tab="build"]');
+        if (st && tab) { tab.click(); st.classList.add("open"); setTimeout(() => st.scrollIntoView({ behavior: "smooth" }), 60); }
+      });
       host.appendChild(b); labelEls[k] = b;
     });
+    // where three labels' dots sit (in the part's own coordinates, so they follow the exploded view and Auto-spin)
+    const meshOf = (detail) => Object.values(groups).flat().find((o) => o.userData.detail === detail);
+    const base = meshOf("case_base"), brd = meshOf("board"), usb = meshOf("cable__usb");
+    if (base) { base.geometry.computeBoundingBox(); const bb = base.geometry.boundingBox;   // on the front wall, right of the socket openings
+      anchors.case_base = { mesh: base, at: new THREE.Vector3(bb.min.x + 0.8 * (bb.max.x - bb.min.x), bb.min.y, (bb.min.z + bb.max.z) / 2) }; }
+    if (brd) { brd.geometry.computeBoundingBox(); const bb = brd.geometry.boundingBox;      // near the card end of the board, away from the heatsink's label
+      anchors.board = { mesh: brd, at: new THREE.Vector3(bb.min.x + 0.12 * (bb.max.x - bb.min.x), (bb.min.y + bb.max.y) / 2, bb.max.z) }; }
+    if (usb) { const pos = usb.geometry.attributes.position; let best = 0, miss = 1e9;      // a point on the mic's cable itself, where it reaches the shelf
+      for (let i = 0; i < pos.count; i++) { const e = Math.abs(pos.getZ(i) - 150); if (e < miss) { miss = e; best = i; } }
+      anchors.cable = { mesh: usb, at: new THREE.Vector3().fromBufferAttribute(pos, best) }; }
     if (new URLSearchParams(location.search).get("view") === "top") { // proof view: the bare board from above, like the official drawing
       topView = true; labelsOn = false;
       Object.keys(groups).forEach((k) => { if (!PI.includes(k) || k === "heatsink" || k === "fan") groups[k].forEach((o) => (o.visible = false)); });
@@ -101,7 +115,7 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
         if (m === "exploded") { setExploded(true, false); aimAt("overview", false, BOX_PARTS); }
         if (m === "xray") { xray = true; press("b-xray", true); }
         if (m === "power") { power = true; press("b-power", true); }
-        if (m === "measure") { measure = true; press("b-measure", true); if (measureGroup) measureGroup.visible = true; }
+        if (m === "measure") { measure = true; setExploded(false, false); xray = true; press("b-xray", true); aimAt("top", false, ["board"]); press("b-measure", true); if (measureGroup) measureGroup.visible = true; }
         if (m === "nolabels") { labelsOn = false; press("b-labels", false); }
       });
       paint();
@@ -111,12 +125,20 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
   .catch((err) => host.insertAdjacentHTML("beforeend", "<p style='padding:12px'>The 3D model could not load: " + err.message + "</p>"));
 
 // ---------- camera ----------
+// how far a part rises in the exploded view (mm)
+const lift = (k) => (k === "case_lid" ? 78 : k === "case_frame" || k === "fan" ? 52 : PI.includes(k) ? 22 : 0) + (k === "heatsink" ? 12 : 0);
 function aimAt(view, animate = true, nodes = null) {
   if (!fitSphere) return;
   currentView = view; currentAimNodes = nodes;
   let sphere = fitSphere;
   if (nodes && nodes.length) {
-    const b = new THREE.Box3(); nodes.forEach((k) => (groups[k] || []).forEach((o) => b.expandByObject(o)));
+    const b = new THREE.Box3(), one = new THREE.Box3();
+    nodes.forEach((k) => (groups[k] || []).forEach((o) => {
+      // frame the parts where they will be once they stop moving (model 'up' is the screen's y)
+      const mover = home.has(o) ? o : o.parent, moved = home.has(mover) ? mover.position.z - home.get(mover).z : 0;
+      const rise = (exploded ? lift(k) : 0) - moved;
+      one.setFromObject(o); one.min.y += rise; one.max.y += rise; b.union(one);
+    }));
     if (!b.isEmpty()) sphere = b.getBoundingSphere(new THREE.Sphere());
   }
   const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
@@ -135,13 +157,9 @@ function aimAt(view, animate = true, nodes = null) {
 // ---------- modes ----------
 function setExploded(on, animate = true) {
   exploded = on;
-  const target = (o) => {
-    const p = home.get(o).clone(), k = o.userData.key; if (!on) return p;
-    // the glTF scene is turned -90° about X, so model Z (up) is the scene's local Z
-    if (k === "case_lid") p.z += 78; else if (k === "case_frame" || k === "fan") p.z += 52; else if (PI.includes(k)) p.z += 22;
-    if (k === "heatsink") p.z += 12;
-    return p;
-  };
+  (groups.cable || []).forEach((o) => { o.visible = !on; }); // cables would hang in the air beside the opened case
+  // the glTF scene is turned -90° about X, so model Z (up) is the scene's local Z
+  const target = (o) => { const p = home.get(o).clone(); if (on) p.z += lift(o.userData.key); return p; };
   if (!animate) { home.forEach((h, o) => o.position.copy(target(o))); partTween = null; }
   else {
     const from = new Map(), t0 = performance.now(); home.forEach((h, o) => from.set(o, o.position.clone()));
@@ -156,7 +174,10 @@ function setExploded(on, animate = true) {
 function paint() {
   Object.entries(groups).forEach(([k, list]) => list.forEach((o) => {
     const on = !focus || focus.includes(k), m = o.material, xr = xray && CASE.includes(k);
-    m.transparent = xr || !on || TO_CONFIRM.includes(k);
+    const seeThrough = xr || !on || TO_CONFIRM.includes(k);
+    // three.js only rebuilds a material when told to: without needsUpdate a part first drawn solid stays solid
+    // (final audit FA-03: 'See inside', 'Show measurements' and the step highlighting did nothing after a normal load)
+    if (m.transparent !== seeThrough) { m.transparent = seeThrough; m.needsUpdate = true; }
     m.opacity = xr ? 0.14 : !on ? 0.16 : TO_CONFIRM.includes(k) ? 0.85 : 1;
     m.depthWrite = !(xr || !on);
     m.emissive = new THREE.Color(on && focus ? 0x1b5e4f : 0x000000); m.emissiveIntensity = on && focus ? 0.28 : 0;
@@ -165,13 +186,12 @@ function paint() {
 }
 function press(id, on) { const b = $(id); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); }
 $("b-assembled").onclick = () => { setExploded(false); focus = null; paint(); caption.textContent = DEFAULT_CAPTION; aimAt("overview"); };
-$("b-exploded").onclick = () => { setExploded(true); aimAt("overview", true, BOX_PARTS); };
-$("b-xray").onclick = () => { xray = !xray; press("b-xray", xray); paint(); };
+// the measuring lines belong to the closed box seen from above: Exploded or See inside switches them off
+function setMeasure(on) { measure = on; press("b-measure", on); if (measureGroup) measureGroup.visible = on; xray = on; press("b-xray", on); paint(); }
+$("b-exploded").onclick = () => { if (measure) setMeasure(false); setExploded(true); aimAt("overview", true, BOX_PARTS); };
+$("b-xray").onclick = () => { if (measure) { setMeasure(false); return; } xray = !xray; press("b-xray", xray); paint(); };
 $("b-labels").onclick = () => { labelsOn = !labelsOn; press("b-labels", labelsOn); };
-$("b-measure").onclick = () => {
-  measure = !measure; press("b-measure", measure); if (measureGroup) measureGroup.visible = measure;
-  if (measure) { xray = true; press("b-xray", true); paint(); aimAt("top", true, ["board"]); }
-};
+$("b-measure").onclick = () => { setMeasure(!measure); if (measure) { setExploded(false, false); aimAt("top", true, ["board"]); } };
 $("b-power").onclick = () => { power = !power; press("b-power", power); paint(); };
 $("b-spin").onclick = () => { spin = !spin; press("b-spin", spin); };
 $("b-grab").onclick = () => {
@@ -199,16 +219,15 @@ function buildMeasurements(s, num) {
 // ---------- step panel ----------
 function renderStep(i, animate = true) {
   stepIdx = Math.max(0, Math.min(STEPS.length - 1, i));
-  const s = STEPS[stepIdx], [view, extra] = STEP_VIEW[s.n] || ["overview"];
-  $("sp-count").textContent = "Step " + (stepIdx + 1) + " of " + STEPS.length;
+  const s = STEPS[stepIdx], [view, extra, frame] = STEP_VIEW[s.n] || ["overview"];
+  $("sp-count").textContent = s.n === 0 ? "Optional" : "Step " + s.n + " of " + (STEPS.length - 1);
   $("sp-title").textContent = s.n + ". " + s.title;
-  $("sp-text").innerHTML = s.actions.slice(0, 3).map((a) => "• " + a).join("<br>") + (s.actions.length > 3 ? "<br>… (full step below)" : "");
+  $("sp-text").innerHTML = s.actions.slice(0, 3).map((a) => "• " + a).join("<br>") + (s.actions.length > 3 ? "<br>… (all of it is on the Build tab)" : "");
   $("sp-check").innerHTML = "<b>✓ Check:</b> " + s.check;
   $("sp-badge").className = "badge " + (s.tested ? "tested" : "untested"); $("sp-badge").textContent = s.tested ? "Tested" : "Not tested yet";
   $("sp-back").disabled = stepIdx === 0; $("sp-next").disabled = stepIdx === STEPS.length - 1;
   $("m-back").disabled = stepIdx === 0; $("m-next").disabled = stepIdx === STEPS.length - 1;
-  $("m-count").textContent = "Step " + (stepIdx + 1) + " of " + STEPS.length + ": " + s.title;
-  document.querySelectorAll(".sp-list button").forEach((b, j) => b.setAttribute("aria-current", j === stepIdx ? "step" : "false"));
+  $("m-count").textContent = (s.n === 0 ? "" : "Step " + s.n + " of " + (STEPS.length - 1) + ": ") + s.title;
   if (!groups.board) return;
   focus = s.focus && s.focus.length ? [...new Set(s.focus.map(baseKey))] : null;
   if (extra === "assemble") { setExploded(true, false); setTimeout(() => setExploded(false), 400); }
@@ -218,7 +237,7 @@ function renderStep(i, animate = true) {
   xray = measure || view === "under"; press("b-xray", xray);
   paint();
   caption.textContent = focus ? "Step " + s.n + ": " + s.title + " — the highlighted parts are the ones this step uses." : DEFAULT_CAPTION;
-  const aim = view === "mic" ? ["mic", "shelf"] : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
+  const aim = frame ? frame : view === "mic" ? (s.n === 9 ? ["mic", "shelf", "cable", "case_base"] : ["mic"]) : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
   if (extra === "measure") focus = ["board"];
   paint();
   aimAt(view, animate, aim && aim.length ? aim : null);
@@ -227,8 +246,6 @@ $("sp-back").onclick = () => renderStep(stepIdx - 1);
 $("sp-next").onclick = () => renderStep(stepIdx + 1);
 $("m-back").onclick = () => renderStep(stepIdx - 1);
 $("m-next").onclick = () => renderStep(stepIdx + 1);
-const list = document.querySelector(".sp-list");
-STEPS.forEach((s, j) => { const b = document.createElement("button"); b.type = "button"; b.innerHTML = "<b>" + s.n + "</b> " + s.title; b.onclick = () => renderStep(j); list.appendChild(b); });
 window.addEventListener("guide-focus", (e) => { const j = STEPS.findIndex((s) => "Step " + s.n + ": " + s.title === e.detail.title); renderStep(j >= 0 ? j : 0); });
 
 // ---------- labels (leader dot, never overlapping, always inside the frame) ----------
@@ -238,9 +255,10 @@ function placeLabels() {
   const w = host.clientWidth, h = host.clientHeight, shown = [];
   Object.keys(labelEls).forEach((k) => {
     const b = labelEls[k], box = new THREE.Box3(); (groups[k] || []).forEach((o) => { if (o.visible) box.expandByObject(o); });
-    const wanted = labelsOn && !topView && !box.isEmpty() && (focus ? focus.includes(k) : (exploded ? EXPLODED_LABELS.includes(k) : OVERVIEW_LABELS.includes(k)));
+    const wanted = labelsOn && !topView && !measure && !box.isEmpty() && (focus ? focus.includes(k) : (exploded ? EXPLODED_LABELS.includes(k) : OVERVIEW_LABELS.includes(k)));
     if (!wanted) { b.style.display = "none"; return; }
-    const c = box.getCenter(new THREE.Vector3()); c.y = box.max.y;
+    const a = anchors[k], c = a && a.mesh.visible ? a.mesh.localToWorld(a.at.clone()) : box.getCenter(new THREE.Vector3());
+    if (!a) c.y = box.max.y;
     const p = project(c, w, h);
     if (!p.ok || p.x < 0 || p.x > w || p.y < 0 || p.y > h) { b.style.display = "none"; return; }
     b.style.display = ""; shown.push({ b, x: p.x, y: p.y - 10 });
@@ -248,7 +266,7 @@ function placeLabels() {
   shown.sort((a, c) => a.y - c.y);
   for (let i = 0; i < shown.length; i++) for (let j = 0; j < i; j++) {
     const a = shown[j], c = shown[i];
-    if (Math.abs(a.x - c.x) < 130 && c.y - a.y < 30) c.y = a.y + 30;
+    if (Math.abs(a.x - c.x) < (a.b.offsetWidth + c.b.offsetWidth) / 2 + 6 && c.y - a.y < 34) c.y = a.y + 34;
   }
   shown.forEach(({ b, x, y }) => { const half = b.offsetWidth / 2 + 4; b.style.left = Math.max(half, Math.min(w - half, x)) + "px"; b.style.top = Math.max(b.offsetHeight + 4, Math.min(y, h - 4)) + "px"; });
   if (measureGroup) measureGroup.children.forEach((line) => {

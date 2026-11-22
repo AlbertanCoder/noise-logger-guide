@@ -1,7 +1,7 @@
 {
   "name": "Noise Logger build guide",
   "short_name": "Noise Logger",
-  "description": "Parts, 3D model, print files and build steps for a Raspberry Pi noise logger.",
+  "description": "Parts, 3D model and build steps for a Raspberry Pi noise logger.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

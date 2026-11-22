@@ -45,7 +45,9 @@ COOLER = dict(w=63.5, d=42.5, h=13.7, fan=30.0)        # READ
 # bought official Pi 5 case: outside size READ from its product brief (98.5 x 70.3 x 33, "approximate"); the shape is simplified
 OCASE = dict(w=98.5, d=70.3, h=33.0, board=(8.2, 7.15), foot=1.0, base_h=20.0, frame_h=6.0, wall=2.0)   # board position measured off the brief's drawing (about 1 mm)
 HEATSINK = (12.0, 17.0, 4.0)                           # READ from the same brief
-UMIK = dict(body_r=10.0, body_l=95.0, neck_r=4.0, neck_l=35.0)   # drawn by eye: the maker does not publish a size
+# drawn by eye from the maker's photo: no size is published
+UMIK = dict(body_r=10.0, body_l=58.0, cone_l=20.0, neck_r=5.2, neck_l=68.0, foam_r=8.5, foam_l=34.0, tilt=50.0)
+SHELF_Z, SHELF_W, SHELF_D = 150.0, 190.0, 120.0        # drawn close together: the real mic stands at least 1 m from the Pi
 MIC = dict(d=45.0, l=150.0)                            # FIFINE body: PROVISIONAL until measured (build step 3)
 # mic holder: back plate, two saddles, two pairs of tie wings, shelf with an open cable slot
 PLATE = dict(w=60.0, h=100.0, t=3.0)                   # wall strips are about 93 mm long
@@ -280,20 +282,68 @@ def official_case():
     return [(k, colored(m, col, k)) for k, m, col in P]
 
 
+def tube(points, r):
+    """A cable: short cylinders with a ball at every bend."""
+    parts = []
+    for a, b in zip(points[:-1], points[1:]):
+        parts.append(trimesh.creation.cylinder(radius=r, segment=[a, b], sections=16))
+    for p in points[1:-1]:
+        ball = trimesh.creation.icosphere(subdivisions=2, radius=r)
+        ball.apply_translation(p)
+        parts.append(ball)
+    return trimesh.util.concatenate(parts)
+
+
 def umik_model(x, y):
-    """miniDSP UMIK-1 on its mini tripod on a high shelf: shape drawn by eye, see-through in the viewer."""
-    z = 12.0
-    u = UMIK
-    parts = [("shelf", box(150, 110, z, x - 75, y - 55, 0), "#b98a5a")]
+    """miniDSP UMIK-1 tilted in its clip on the mini tripod, on a high shelf, with its cable to the Pi and the power cable.
+    Shapes drawn by eye from the maker's photo; the distances are drawn much shorter than real."""
+    u, z = UMIK, SHELF_Z + 8.0
+    x0, x1, y0 = x - SHELF_W / 2, x + SHELF_W / 2, y - SHELF_D / 2
+    parts = [("shelf", box(SHELF_W, SHELF_D, 8.0, x0, y0, SHELF_Z), "#b98a5a"),
+             ("shelf__side", box(6.0, SHELF_D, SHELF_Z, x1 - 6.0, y0, 0), "#a87a4b"),
+             ("shelf__side", box(6.0, SHELF_D, SHELF_Z, x0, y0, 0), "#a87a4b")]
+    hub = np.array([x, y, z + 34.0])
     for k in range(3):
         a = 2 * np.pi * k / 3 + np.pi / 2
-        leg = trimesh.creation.cylinder(radius=2.0, segment=[[x, y, z + 32], [x + 38 * np.cos(a), y + 38 * np.sin(a), z + 2]])
-        parts.append(("mic__leg", leg, "#2b2e33"))
-    zb = z + 30
-    parts += [("mic", cyl(u["body_r"], u["body_l"], x, y, zb), "#1d1f22"),
-              ("mic__neck", cyl(u["neck_r"], u["neck_l"], x, y, zb + u["body_l"]), "#c4c8cd"),
-              ("mic__tip", cyl(u["neck_r"] + 0.6, 5.0, x, y, zb + u["body_l"] + u["neck_l"]), "#2b2e33"),
-              ("mic__light", cyl(1.5, 1.0, x, y - u["body_r"] - 0.2, zb + 40), "#3b82c4")]
+        parts.append(("mic__leg", trimesh.creation.cylinder(radius=2.2, segment=[hub, [x + 40 * np.cos(a), y + 40 * np.sin(a), z + 2.2]]), "#2b2e33"))
+    pivot = np.array([x, y, z + 62.0])
+    parts += [("mic__post", trimesh.creation.cylinder(radius=7.0, segment=[hub - [0, 0, 4], hub + [0, 0, 14]]), "#23262a"),
+              ("mic__post", trimesh.creation.cylinder(radius=4.5, segment=[hub, pivot]), "#23262a")]
+    t = np.radians(u["tilt"])
+    d = np.array([-np.cos(t), 0.0, np.sin(t)])                       # the way the mic points: up and to the left
+
+    def at(s):
+        return pivot + d * s
+
+    def rod(r, a, b):
+        return trimesh.creation.cylinder(radius=r, segment=[at(a), at(b)], sections=48)
+
+    rear, front = -u["body_l"] * 0.75, u["body_l"] * 0.25
+    cone = trimesh.creation.revolve([[0, 0], [u["body_r"], 0], [u["neck_r"], u["cone_l"]], [0, u["cone_l"]]], sections=48)
+    cone.apply_transform(trimesh.geometry.align_vectors([0, 0, 1], d))
+    cone.apply_translation(at(front))
+    neck = front + u["cone_l"]
+    foam0 = neck + u["neck_l"] - 12
+    dome = trimesh.creation.icosphere(subdivisions=3, radius=u["foam_r"])
+    dome.apply_translation(at(foam0 + u["foam_l"] - u["foam_r"]))
+    parts += [("mic", rod(u["body_r"], rear, front), "#8d9299"), ("mic__cone", cone, "#8d9299"),
+              ("mic__tube", rod(u["neck_r"], neck, neck + u["neck_l"]), "#9aa0a6"),
+              ("mic__foam", rod(u["foam_r"], foam0, foam0 + u["foam_l"] - u["foam_r"]), "#1d1f22"), ("mic__foam", dome, "#1d1f22"),
+              ("mic__clip", rod(u["body_r"] + 2.5, -14, 10), "#23262a"), ("mic__light", rod(1.6, rear - 0.6, rear + 1), "#3b82c4")]
+    plug = at(rear - 12)
+    ox, oy = OCASE["board"]
+    usb = [ox + BOARD["w"] + RIGHT["usb_stack_upper"]["out"], oy + RIGHT["usb_stack_upper"]["c"], Z_TOP + 12.0]
+    cx, cy = usb[0] + 22, y0 - 8                                     # the cable goes round the front of the side panel
+    path = [usb, [usb[0] + 14, usb[1], usb[2]], [cx, usb[1] - 14, usb[2] - 6], [cx, cy + 10, 12], [cx + 6, cy, 30],
+            [cx + 6, cy, z - 4], [cx + 14, cy + 8, z + 4], [cx + 26, cy + 18, z + 3], [plug[0] - 20, y0 + 16, z + 3],
+            [plug[0] + 14, y0 + 30, z + 3], [plug[0] + 20, y - 8, z + 4], [plug[0] + 14, y, plug[2] - 14], list(plug)]
+    uc = [ox + FRONT["usb-c_power"]["c"], oy, Z_TOP + 1.6]
+    power = [[uc[0], oy - 12, uc[2]], [uc[0], oy - 34, uc[2]], [uc[0] - 6, oy - 44, 5], [uc[0] - 24, oy - 50, 2.4], [-70, oy - 50, 2.4]]
+    parts += [("cable__usb", tube([np.array(q, float) for q in path], 2.0), "#2b2e33"),
+              ("cable__plug", box(16, 12, 6, usb[0] - 2, usb[1] - 6, usb[2] - 3), "#2b2e33"),
+              ("cable__micplug", trimesh.creation.cylinder(radius=5.0, segment=[at(rear), plug]), "#2b2e33"),
+              ("cable__powerplug", box(11, 20, 6.5, uc[0] - 5.5, oy - 18, uc[2] - 3.2), "#1d1f22"),
+              ("cable__power", tube([np.array(q, float) for q in power], 2.2), "#1d1f22")]
     return [(k, colored(m, c, k)) for k, m, c in parts]
 
 
@@ -323,7 +373,7 @@ def main():
     for key, m in pi_model():
         m.apply_translation(shift)
         put(key, m)
-    for key, m in official_case() + umik_model(OCASE["w"] + 130, OCASE["d"] / 2):
+    for key, m in official_case() + umik_model(OCASE["w"] + 160, OCASE["d"] / 2 + 20):
         put(key, m)
     scene.export(OUT_MODEL / "noise-logger.glb")
     (OUT_MODEL / "colors.json").write_text(json.dumps(COLOR_MAP, indent=0))

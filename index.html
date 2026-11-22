@@ -26,14 +26,14 @@ button,input,textarea{font:inherit}
 .side{display:none}
 .app{min-height:100vh;padding-bottom:76px}
 .top{background:linear-gradient(135deg,var(--pine-deep),#1f6e59);color:#fff;padding:18px 18px 16px}
-.kicker{letter-spacing:.14em;text-transform:uppercase;font-size:12.5px;color:#f2d38a;font-weight:700}
+.kicker{letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:#f2d38a;font-weight:700}
 .top h1{margin:.15em 0 .5em;font-size:1.65em;line-height:1.15;display:flex;gap:10px;align-items:center}
 .logo{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:22px;flex:none}
 .prog{display:flex;align-items:center;gap:10px;font-size:14px}.prog .bar{flex:1;height:9px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden}
 .prog .bar i{display:block;height:100%;width:0;background:#f2d38a;transition:width .3s}
 .wrap{max-width:980px;margin:0 auto;padding:14px}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
-.tabs button{flex:1;border:0;background:none;color:var(--soft);display:flex;flex-direction:column;align-items:center;gap:1px;min-height:56px;border-radius:12px;font-size:12.5px;cursor:pointer}
+.tabs button{flex:1;border:0;background:none;color:var(--soft);display:flex;flex-direction:column;align-items:center;gap:1px;min-height:56px;border-radius:12px;font-size:13px;cursor:pointer}
 .tabs button .ic{font-size:20px;line-height:1.1}
 .tabs button[aria-selected="true"]{background:var(--pine-pale);color:var(--pine-deep);font-weight:700}
 @media (min-width:900px){
@@ -48,12 +48,12 @@ section[role="tabpanel"][hidden]{display:none}
 /* ---------- shared pieces ---------- */
 h2{font-size:1.4em;margin:.2em 0 .5em} h3{margin:.2em 0 .3em;font-size:1.1em}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
-.eyebrow{letter-spacing:.13em;text-transform:uppercase;font-size:12.5px;color:var(--ember);font-weight:700}
+.eyebrow{letter-spacing:.13em;text-transform:uppercase;font-size:13px;color:var(--ember);font-weight:700}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:600;cursor:pointer;text-decoration:none}
 .btn.solid{background:var(--pine);color:#fff;border-color:var(--pine)} .btn.big{font-size:1.05em;padding:12px 22px}
 .btn[aria-pressed="true"]{background:var(--pine);color:#fff;border-color:var(--pine)}
 .soft{color:var(--soft)} .small{font-size:14px}
-.badge{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--pine-pale);color:var(--pine-deep)}
+.badge{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--pine-pale);color:var(--pine-deep)}
 .badge.untested{background:var(--gold-pale);color:#6b4e06}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .tile{background:var(--pine-pale);border-radius:12px;padding:10px 12px}.tile b{display:block;font-size:1.35em}
@@ -95,6 +95,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 #viewer canvas{display:block;width:100%;height:100%;touch-action:pan-y}
 #viewer.grabbed,#viewer.grabbed canvas{touch-action:none;outline:3px solid var(--pine)}
 .vlabel{position:absolute;transform:translate(-50%,-100%);background:rgba(18,58,46,.92);color:#fff;font-size:13px;line-height:1.3;padding:4px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;border:0;min-height:28px}
+.vlabel::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px} /* 44 px to tap */
 .vlabel .dot{position:absolute;left:50%;bottom:-9px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 2px #fff}
 .mlabel{position:absolute;transform:translate(-50%,-50%);background:#fff;color:var(--ember);border:1.5px solid var(--ember);font-size:13px;font-weight:700;padding:2px 7px;border-radius:999px;pointer-events:none;white-space:nowrap}
 .vbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -104,7 +105,6 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .steppanel{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fffdf8;display:flex;flex-direction:column;gap:6px;min-width:0}
 .sp-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .sp-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}.sp-nav .btn:disabled,.mnav .btn:disabled{opacity:.45}
-.sp-list{display:none}
 .check{background:var(--pine-pale);border-radius:10px;padding:8px 10px}
 @media (min-width:900px){#viewer{height:470px}.stage{grid-template-columns:1fr 320px}.mnav{display:none}}
 /* Buy */
@@ -127,7 +127,7 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 <header class="top">
   <div class="kicker">Built for Shad · Edmonton</div>
   <h1><span class="logo">🎙</span>Build a Noise Logger</h1>
-  <div class="prog"><span class="bar"><i id="progress-bar"></i></span><span id="progress-text">0 of 12 steps done</span></div>
+  <div class="prog"><span class="bar"><i id="progress-bar"></i></span><span id="progress-text">0 of 11 steps done</span></div>
 </header>
 <main class="wrap">
 
@@ -135,18 +135,19 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
   <div class="card">
     <div class="eyebrow">Where you are</div>
     <h2 id="next-title" style="margin-top:.2em">Next: Step 1 · Order the parts</h2>
+    <p class="small" id="hold" style="margin:.2em 0 .6em"><b>Final audit done (2026-11-22):</b> the five parts are the right ones. Read step 1 before you pay: the mic's return has a condition.</p>
     <button class="btn solid big" id="next-go">Go to Step 1</button>
     <h3 style="margin-top:16px;font-size:1em">Where I left off</h3>
     <textarea id="leftoff" placeholder="One line for next time, for example: mic test passed, waiting for the Pi"></textarea>
   </div>
   <div class="card">
     <div class="dash-top"><div class="ring" id="ring"><i id="ring-pct">0%</i></div>
-    <div><div class="eyebrow">Your progress</div><b id="ring-text">Nothing ticked yet: start with Buy.</b></div></div>
+    <div><div class="eyebrow">Your progress</div><b id="ring-text">Nothing ticked yet: start with step 1.</b></div></div>
     <div class="dash">
       <button class="dcard" data-go="buy"><span class="ic">🛒</span><b id="dc-buy">0 / 5</b><span>parts bought</span><span class="small soft" id="dc-buy2"></span></button>
       <button class="dcard" data-go="build"><span class="ic">🎙</span><b id="dc-mic">Not yet</b><span>mic test passed</span><span class="small soft">step 3: the biggest doubt</span></button>
-      <button class="dcard" data-go="build"><span class="ic">🔧</span><b id="dc-build">0 / 12</b><span>build steps done</span><span class="small soft" id="dc-build2"></span></button>
-      <button class="dcard" data-go="model"><span class="ic">📱</span><b id="dc-use">Use it</b><span id="dc-use2">after step 11</span><span class="small soft">phone page &amp; report</span></button>
+      <button class="dcard" data-go="build"><span class="ic">🔧</span><b id="dc-build">0 / 11</b><span>build steps done</span><span class="small soft" id="dc-build2"></span></button>
+      <button class="dcard" data-go="build"><span class="ic">📱</span><b id="dc-use">Use it</b><span id="dc-use2">after step 11</span><span class="small soft">phone page &amp; report</span></button>
     </div>
   </div>
   <div class="card">
@@ -154,21 +155,30 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
     <p style="margin:.3em 0"><b>A box that listens all day and writes down when noise happens, how long, how loud and what kind of sound,
     so there is an honest dated record to show someone.</b></p>
     <h3>On day one it should</h3>
-    <ul><li>Log every event: date, time, length, loudness compared with your quiet room, and likely sound types.</li>
+    <ul><li>Log every event: date, time, length, how loud the mic heard it, and likely sound types.</li>
     <li>Count the night ones (10 pm to 7 am), make a report, and open on your phone.</li>
     <li>Let you tap Mine, Theirs or Not sure on an event.</li></ul>
-    <p class="small soft">The log software passes its tests on a laptop and has not run on a Pi yet. Two faults must be fixed before day one: long, steady noise can be missed, and event times can drift.</p>
+    <p class="small soft">The log software passes its own tests on a laptop and has not run on a Pi yet.</p>
+    <div class="note safety"><b>Must be fixed in the software before day one</b>
+    <ul style="margin:.3em 0;padding-left:1.2em"><li>Faint short thumps can be missed (found with made-up thumps). Fix this before judging the mic.</li>
+    <li>Long, steady noise hides the thumps inside it.</li>
+    <li>A steady low rumble is counted as many thumps (found with made-up sound).</li>
+    <li>If the mic is unplugged, the logger waits and records nothing, and the log doesn't show it.</li>
+    <li>Stopping or restarting the logger loses the noise in progress.</li>
+    <li>Event times can drift.</li>
+    <li>Nothing is stored yet that decibel estimates would need.</li></ul></div>
     <h3>It does not</h3>
     <ul><li>Act as a legal sound meter. Decibels will be estimates, and only a bylaw officer can confirm a violation.</li>
-    <li>Know whose noise it is. That waits until a learning test passes; until then every event says the source is not decided.</li>
-    <li>Keep conversations. Audio is off. No filter is perfect, so thump clips are tested before they can be turned on.</li>
+    <li>Know whose noise it is. That waits until a learning test passes; until then the report says the source is not decided.</li>
+    <li>Keep conversations. Saving audio is off. The log does note that talking was heard, and when; that note can be wrong (plain hiss set it off in a test), so it never proves that someone spoke. In a test the speech check missed muffled voices under knocks, so thump clips stay off until that is fixed and tested.</li>
     <li>Play any sound. There is no speaker.</li></ul>
+    <p class="small soft">A microphone that listens all day can fall under privacy and recording law. Check your own; nothing here is legal advice.</p>
     <h3>Later, in this order</h3>
     <ol><li>Decibel estimates from the mic's calibration file.</li><li>Short thump clips, never when talking is heard.</li><li>A small sound model that learns whose noise it is from your taps. It counts only if it passes its test.</li></ol>
     <h3>It could also be used for</h3>
     <ul><li>A portfolio piece: this guide, the model and its checks.</li><li>A sleep record: what woke you and when.</li><li>Loud noise from next door.</li></ul>
     <p class="small soft">None of the "later" or "also" items is built, except the tap buttons.</p>
-    <div class="tiles"><div class="tile"><b id="t-cost">$363</b>parts, with GST, plus PiShop and Solen shipping</div><div class="tile"><b>~3 h</b>hands-on building (estimate)</div><div class="tile"><b>0</b>holes in walls</div></div>
+    <div class="tiles"><div class="tile"><b id="t-cost">$416.68</b>parts, with GST, plus PiShop shipping</div><div class="tile"><b>~3 h</b>hands-on building (estimate)</div><div class="tile"><b>0</b>holes in walls</div></div>
   </div>
 </section>
 
@@ -195,14 +205,13 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
         <button class="btn" id="b-measure" aria-pressed="false">Show measurements</button>
         <button class="btn" id="b-power" aria-pressed="false">Power on (preview)</button>
         <button class="btn" id="b-spin" aria-pressed="false">Auto-spin</button></div></details>
-      <p id="vcaption" class="small">You're looking at the whole device: the Raspberry Pi in its official case, and the microphone on a high shelf. The Pi is drawn from the official drawing; the case and mic shapes are simplified.</p>
+      <p id="vcaption" class="small">You're looking at the whole device: the Raspberry Pi in its official case, and the microphone on a high shelf. The Pi is drawn from the official drawing; the case is simplified, and the mic, shelf and cables are drawn by eye. They are drawn close together: keep the real mic at least 1 m from the Pi. The mic is drawn leaning; point the real one up at the ceiling.</p>
     </div>
     <aside class="steppanel">
       <div class="sp-head"><b>Step by step</b><span class="soft small" id="sp-count"></span></div>
       <h3 id="sp-title"></h3><span class="badge" id="sp-badge"></span>
       <p class="small" id="sp-text"></p><p class="small check" id="sp-check"></p>
       <div class="sp-nav"><button class="btn" id="sp-back" type="button">← Back</button><button class="btn solid" id="sp-next" type="button">Next step →</button></div>
-      <div class="sp-list"></div>
     </aside>
   </div>
 </section>
@@ -210,11 +219,32 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 <section role="tabpanel" id="p-buy" hidden>
   <h2>What to buy</h2>
   <div class="card"><div class="eyebrow">Your bill</div><div class="tiles" id="bill" style="margin-top:8px"></div>
-  <p class="small soft" style="margin:.6em 0 0"><b>Waiting for a second audit before ordering.</b> Prices and stock read on each shop's page on the date shown. A working link is not stock: check before you pay, and check the model number matches.</p></div>
+  <p class="small soft" style="margin:.6em 0 0"><b>Checked again in the final audit, 2026-11-22.</b> Prices and stock read on each shop's page on the date shown. A working link is not stock: check before you pay, and check the model number matches.</p></div>
   <div class="parts" id="cards"></div>
+  <div class="card" style="margin-top:14px"><div class="eyebrow">Why this mic</div>
+  <h3>What the noise is</h3>
+  <p style="margin:.3em 0">Heavy footsteps through a wood-joist floor are mostly <b>below 100 Hz</b>, a deep thump (<a href="https://www.aivc.org/sites/default/files/airbase_13023.pdf" target="_blank" rel="noopener">National Research Council Canada ↗</a>).
+  In one study the footsteps reached <b>30 to 55 dB</b> in the room below (<a href="https://livrepository.liverpool.ac.uk/3114955/" target="_blank" rel="noopener">University of Liverpool ↗</a>).
+  The first source also says most of the energy that reaches the room below is under 250 Hz.</p>
+  <h3>What the mic must do</h3>
+  <p style="margin:.3em 0">Hear down to about 20 Hz, from any direction, with little hiss of its own, and have a known loudness so decibel estimates are possible later.</p>
+  <h3>Why the UMIK-1</h3>
+  <ul style="margin:.3em 0;padding-left:1.2em">
+    <li>20 Hz to 20 kHz, within 1 dB once its own calibration file is used (maker's page).</li>
+    <li>Its hiss is about 30 dB(A) by outside reports. The maker gives its noise only in another unit (-74 dBFS at top gain). By a rough estimate that is below what ears can detect up to about 80 Hz, and above it from about 100 Hz.</li>
+    <li>So: clear stomps and thumps, likely yes. Very faint knocks in a silent room, maybe not. <b>Nobody has tested it on this ceiling yet</b>; step 3 does that.</li>
+  </ul>
+  <details><summary>The other four that were looked at</summary><div><ul style="margin:.3em 0;padding-left:1.2em">
+    <li><b>miniDSP UMIK-2, $306.60 (Solen).</b> Quieter and calibrated, but the whole build goes over $500 and the shop's policy only takes back unused items.</li>
+    <li><b>Rode NT1 Signature + Behringer UMC22, $284 (Amazon).</b> The quietest (4 dBA), but not calibrated and needs the extra box.</li>
+    <li><b>Rode NT-USB+, $249 (Amazon).</b> One cable, but not calibrated, and Linux is not on its list.</li>
+    <li><b>Clippy EM272, from £39.84 (UK).</b> Very quiet (about 14 dBA), but not calibrated and needs a USB adapter that wasn't priced.</li>
+  </ul><p class="small soft">Prices read 2026-11-22. The same UMIK-1 is $142.80 at Solen, whose policy takes back only unused items, with at least a 10% charge and only with approval first. Amazon's free return also asks for new and unused condition, but needs no approval and has no fixed charge.</p></div></details></div>
   <div class="card" id="tools" style="margin-top:14px"><div class="eyebrow">Also have ready (not in the bill)</div>
   <ul style="margin:.5em 0 0;padding-left:1.2em">
-    <li>A shelf or bookcase close to the ceiling, near a power outlet</li>
+    <li>A shelf or bookcase close to the ceiling</li>
+    <li>A spot for the Pi: at most 1.2 m of cable from an outlet, and at least 1 m but at most 1.5 m of cable from the mic. Measure before you order; an extension cord may be needed (the supply has a two-pin plug, so any household cord fits)</li>
+    <li>The laptop, with a free USB-A socket, and the home Wi-Fi name and password</li>
     <li>USB card reader, only if the laptop has no card slot</li>
   </ul></div>
 </section>
@@ -231,59 +261,59 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 {"checkedOn": "2026-11-22", "gst": 0.05,"lines":[
 {"id": "pi", "item": "Raspberry Pi 5, 2GB", "model": "SC1642 (PiShop shows 9022-Pi5-2GB)", "price": 110.5, "shop": "PiShop.ca", "url": "https://www.pishop.ca/product/raspberry-pi-5-2gb/", "stock": "In stock", "status": "VERIFIED", "why": "The computer. 2GB is plenty, also for training the small sound model later (measured on the laptop with made-up data: about 120 MB)."},
 {"id": "psu", "item": "Official 27W USB-C power supply", "model": "SC1158", "price": 16.95, "shop": "PiShop.ca", "url": "https://www.pishop.ca/product/raspberry-pi-27w-usb-c-power-supply-black-us/", "stock": "In stock", "status": "VERIFIED", "why": "5.1 V / 5 A, 1.2 m cable. Phone chargers often can't supply enough."},
-{"id": "case", "item": "Official case for Raspberry Pi 5, red/white", "model": "Match the title: Case for Pi 5", "price": 14.45, "shop": "PiShop.ca", "url": "https://www.pishop.ca/product/raspberry-pi-case-for-pi-5-red-white/", "stock": "In stock", "status": "VERIFIED", "why": "Clips together, no screws. Has its own fan, a small heatsink and rubber feet, so no separate cooler is needed."},
-{"id": "sd", "item": "SanDisk MAX Endurance 64GB microSD", "model": "SDSQQVR-064G-GN6IA", "price": 60.99, "shop": "Amazon.ca", "url": "https://www.amazon.ca/dp/B084CJ96GT", "stock": "In stock", "status": "VERIFIED", "why": "Made for non-stop recording (30,000 hours on the listing). Comes with a full-size SD adapter."},
-{"id": "mic", "item": "miniDSP UMIK-1 (v3) USB measurement mic", "model": "UMIK-1", "price": 142.8, "shop": "Solen.ca", "url": "https://solen.ca/en/products/minidsp-umik-1-minidsp-microphone", "stock": "26 left", "status": "VERIFIED", "why": "Picks up from all directions, works on Linux without a driver, and has its own calibration file. Comes with a 1.5 m USB-C cable, a mini tripod and a wind screen. Not tested yet on faint footsteps."}
+{"id": "case", "item": "Official case for Raspberry Pi 5, red/white", "model": "SC1159 (PiShop's page shows SC0229)", "price": 14.45, "shop": "PiShop.ca", "url": "https://www.pishop.ca/product/raspberry-pi-case-for-pi-5-red-white/", "stock": "In stock", "status": "VERIFIED", "why": "Clips together, no screws. Has its own fan, a small heatsink and rubber feet, so no separate cooler is needed."},
+{"id": "sd", "item": "SanDisk High Endurance 64GB microSD", "model": "SDSQQNR-064G-GN6IA", "price": 37.99, "shop": "Amazon.ca", "url": "https://www.amazon.ca/dp/B07P3D6Y5B", "stock": "In stock, sold by Amazon.ca", "status": "VERIFIED", "why": "Made for non-stop recording (5,000 hours of video on the listing). The logger only writes short rows, so the dearer MAX Endurance card isn't needed. Comes with a full-size SD adapter."},
+{"id": "mic", "item": "miniDSP UMIK-1 USB measurement mic", "model": "UMIK-1", "price": 216.95, "shop": "Amazon.ca", "url": "https://www.amazon.ca/dp/B00N4Q25R8", "stock": "In stock, ships from Amazon, free returns if new and unused", "status": "VERIFIED", "why": "Picks up from all directions, works on Linux without a driver (maker), and has its own calibration file. Comes with a USB cable, a mini tripod and a wind screen. Sold by another company but shipped by Amazon. It costs more than at Solen because Amazon's return is easier: free, no approval needed, for a mic sent back in new and unused condition. So keep it spotless until step 3 passes. The listing doesn't say which version; either should work. Not tested yet on faint footsteps."}
 ]}
 </script>
 <script type="application/json" id="steps-data">
 [
 {"n":0,"title":"Optional: try the logger on your laptop first","time":"20 min","parts":[],"tested":true,"focus":[],
  "actions":["Install Python 3.12 on the laptop.","Set up the logger's folder and install its parts (the logger code is private for now; its README has the three set-up commands).","Run its self-test: <code>.venv\\Scripts\\python -m pytest -q</code>.","Run a quiet-room measurement: <code>.venv\\Scripts\\python -m noise_logger --calibrate</code>."],
- "check":"The self-test says all tests passed, and the quiet measurement prints a level and a saved threshold.","proof":"Done on 2026-11-21: all tests passed (38 at the last run); two quiet measurements 0.0 dB apart."},
+ "check":"The self-test says all tests passed, and the quiet measurement prints a level and a saved threshold. Steps 3, 8 and 11 use this laptop copy.","proof":"Done on 2026-11-21: all tests passed (38 at the last run); two quiet measurements 0.0 dB apart."},
 {"n":1,"title":"Order the parts","time":"30 min","parts":["all"],"tested":false,"focus":[],
- "actions":["Open each link in the Buy list.","Check the title and model on the page match the card.","Pick the right one: the <b>2GB board only</b> (not a kit; PiShop allows 1 per order), the <b>64 GB</b> memory card, the case <b>for Pi 5</b>, and the <b>UMIK-1</b> (not the UMIK-2).","Before you pay Solen, ask if the mic can be returned if it can't hear the noise you need. I could not find their return policy.","Order the 3 PiShop parts together. PiShop and Solen shipping show in their carts and are extra."],
- "check":"Three order confirmations (PiShop, Solen, Amazon) list the same items as the cards."},
+ "actions":["Open each link in the Buy list.","Check the title and model on the page match the card.","Pick the right one: the <b>2GB board only</b> (not a kit; PiShop allows 1 per order), the <b>64 GB</b> memory card, the case <b>for Pi 5</b>, and the <b>UMIK-1</b> (not the UMIK-2).","On the mic's page, check it still says <b>Ships from Amazon</b> and <b>FREE returns</b>, and note the return date.","Know the condition: Amazon's free return is for a mic in <b>new and unused condition</b>. A tested mic that is spotless and complete is normally taken back, but that is not promised.","Order the mic and the memory card from Amazon.","Order the 3 PiShop parts together. PiShop shipping shows in the cart and is extra.","PiShop gives no refund for a change of mind. If the mic fails, the Pi parts still work with another mic. To risk nothing, order these 3 after step 3 passes."],
+ "check":"Two order confirmations (PiShop, Amazon) list the same items as the cards, and you have the mic's return date."},
 {"n":2,"title":"Check the parts when they arrive","time":"15 min","parts":["all"],"tested":false,"focus":["board", "mic", "case_base"],
- "actions":["Take a photo of each box's label.","Find SC1642 and 2GB on the Pi box.","Find the 7-digit serial number printed on the mic's body and write it down.","Leave the Pi in its anti-static bag until step 6."],
+ "actions":["Take a photo of each box's label.","Find SC1642 and 2GB on the Pi box.","The case's official code is SC1159; PiShop's page shows SC0229. Either is fine if the box says Case for Raspberry Pi 5, red/white.","Find the 7-digit serial number printed on the mic's body and write it down.","Look at the mic's socket: USB-C is the newer kind, the small mini-USB is older. Either should work with the cable in its box. Measure that cable (the maker lists 1.5 m).","Keep the mic's box, bags and ties, and keep the mic clean and unmarked, until step 3 passes: the free return is for a mic in new condition.","Leave the Pi in its anti-static bag until step 6."],
  "check":"Every label matches the Buy list and you have the mic's serial number."},
 {"n":3,"title":"Test the mic on the laptop first","time":"30 min, at a noisy time of day","parts":["mic"],"tested":false,"focus":["mic"],
- "actions":["Plug the mic into the laptop and stand it on its tripod on the high shelf, where it will live.","In PowerShell: <code>cd $HOME\\noise-logger</code>, then list the mics: <code>.venv\\Scripts\\python -m noise_logger --list-devices</code>.","Tell the logger to use it: <code>.venv\\Scripts\\python -c \"from noise_logger import config as c; s=c.load(); s.mic_name='umik'; c.save(s)\"</code>.","With the room quiet, measure it (1 minute): <code>.venv\\Scripts\\python -m noise_logger --calibrate</code>.","Let it listen while the noise you want to log is happening: <code>.venv\\Scripts\\python -m noise_logger --run</code>. Press Ctrl+C to stop.","Count how many thumps you heard and how many it wrote down."],
- "warn":"This is the biggest doubt in the whole build. If it misses most thumps, stop here and return the mic before buying or building anything else.",
+ "actions":["Plug the mic into the laptop and stand it on its tripod on the high shelf, where it will live. Point it up at the ceiling.","Put the laptop as far away as the cable allows, in its quietest mode, so its fan isn't what the mic hears.","In Windows sound settings, open the mic and turn <b>Audio enhancements</b> off, if that setting is there.","In PowerShell, go to the logger's folder: <code>cd $HOME\\noise-logger</code>.","List the mics: <code>.venv\\Scripts\\python -m noise_logger --list-devices</code>.","Tell the logger to use it: <code>.venv\\Scripts\\python -c \"from noise_logger import config as c; s=c.load(); s.mic_name='umik'; c.save(s)\"</code>.","With the room quiet, measure it (1 minute): <code>.venv\\Scripts\\python -m noise_logger --calibrate</code>.","Let it listen while the noise you want to log is happening: <code>.venv\\Scripts\\python -m noise_logger --run</code>. Press Ctrl+C to stop.","Count at least 40 thumps you heard. Add up the numbers after the word <code>thumps</code> on its lines and compare."],
+ "warn":"Not ready yet: the logger's thump detection must be changed first, because it can miss faint thumps even with a good mic. Don't judge the mic before that. After the fix, if it still misses most thumps, return the mic before its return date. This is the biggest doubt in the whole build.",
  "check":"It wrote down at least 9 of every 10 thumps you heard, and nothing while the room was quiet."},
 {"n":4,"title":"Download the mic's calibration file","time":"5 min","parts":["mic"],"tested":false,"focus":["mic"],
- "actions":["Open <a href=\"https://www.minidsp.com/products/acoustic-measurement/umik-1\" target=\"_blank\" rel=\"noopener\">the maker's UMIK-1 page ↗</a> and go to \"Unique Calibration File Download\".","Type the serial number the way the page shows it (like 700-1234).","Save both files in the logger's folder, in a new folder called <code>calibration</code>."],
+ "actions":["Open <a href=\"https://www.minidsp.com/products/acoustic-measurement/umik-1\" target=\"_blank\" rel=\"noopener\">the maker's UMIK-1 page ↗</a> and go to \"Unique Calibration File Download\".","Type the serial number the way the page shows it (like 700-1234).","Save both files in the logger's <code>data</code> folder, in a new folder called <code>calibration</code> (so <code>data\\calibration</code>). That folder is never saved with the code, so your serial number stays on this laptop."],
  "check":"Two text files with your serial number in their names. They are needed later for decibel estimates, not for the log itself."},
 {"n":5,"title":"Put the system on the microSD card","time":"20 min","parts":["sd"],"tools":["USB card reader (only if the laptop has no SD slot)"],"tested":false,"focus":["sdcard"],
- "actions":["Put the microSD card in the laptop (in its adapter, or in a USB card reader).","On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","Hostname: <code>noise-logger</code>. Localisation: your city and keyboard.","User: your own username and password (write them down). Wi-Fi: your home network.","Remote access: turn on SSH, with a password. Raspberry Pi Connect: leave it off.","Write the card."],
+ "actions":["Put the microSD card in the laptop. A microSD-size slot takes it as it is; a full-size slot needs the adapter from the card's pack; no slot means a USB card reader.","On the laptop, install Raspberry Pi Imager (version 2.0.12 or newer) from raspberrypi.com/software.","Choose Device: Raspberry Pi 5.","Choose OS: Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit).","Choose Storage: the microSD card.","Hostname: <code>noise-logger</code>.","Localisation: Imager asks for a capital city. Pick Canada's, then change the time zone to Edmonton's and check the keyboard.","User: a username in lowercase letters, and a password. Write both down.","Wi-Fi: your home network's name and password.","Remote access: turn on SSH, with a password. Raspberry Pi Connect: leave it off.","Write the card. Imager warns that the card will be erased: agree."],
  "check":"Imager says the write finished successfully."},
 {"n":6,"title":"Put it together","time":"20 min","parts":["pi", "case", "sd"],"tested":false,"focus":["board", "heatsink", "fan", "case_base"],
- "actions":["Peel the backing off the small heatsink and press it onto the raised part of the main chip.","Stick the four rubber feet under the red base.","Unclip the white frame (with the fan) from the red base.","Put the Pi in the base: one end goes under the plastic tab at the card end. It must sit flat with the sockets in their holes.","Lay the frame upside-down beside it and plug the fan cable into the socket marked <b>FAN</b>, the right way round and all the way in.","Clip the frame back on, then the lid.","Push the microSD card into its slot."],
+ "actions":["Open the case. The heatsink and the four feet are in a small envelope inside.","Peel the backing off the small heatsink and press it firmly onto the raised part of the main chip.","Stick the four rubber feet under the red base.","Unclip the white frame (it holds the fan and the lid) from the red base.","Put the Pi in the base: one end goes under the plastic tab at the card end. It must sit flat with the sockets in their holes.","Lay the frame upside-down beside it and plug the fan cable into the socket marked <b>FAN</b>, the right way round and all the way in.","Clip the frame back onto the base. If the lid came off, clip it on too.","Push the microSD card into its slot."],
  "warn":"Don't cover the case: it needs air. Don't touch the fan while it is on.",
  "check":"Every socket shows in its hole, the fan cable is plugged in, and the button on the case clicks."},
 {"n":7,"title":"First start and connect from the laptop","time":"10 min","parts":["psu"],"tested":false,"focus":["usb-c_power"],
- "actions":["Plug in the power supply (push until it clicks fully in) and wait 2 minutes.","On the laptop, open PowerShell and type: <code>ssh yourname@noise-logger.local</code>.","The first time it asks if you are sure: type <code>yes</code>. Then type the Pi's password (nothing shows while you type).","If that name isn't found, find the Pi in your router's device list and use its number instead.","Check the memory: <code>free -h</code>. Check the power: <code>vcgencmd get_throttled</code>."],
+ "actions":["Plug in the power supply (push until it clicks fully in) and wait 2 minutes.","On the laptop, open PowerShell and type: <code>ssh yourname@noise-logger.local</code>.","The first time it asks if you are sure: type <code>yes</code>. Then type the Pi's password (nothing shows while you type).","If that name isn't found, find the Pi in your router's device list and use its number instead.","Check the memory: <code>free -h</code>. Check the power: <code>vcgencmd get_throttled</code>.","Any time you need to unplug it: type <code>sudo poweroff</code>, wait 30 seconds, then unplug."],
  "check":"You see the Pi's command prompt, <code>free -h</code> shows about 2 GB in total, and the power check says <code>throttled=0x0</code>."},
 {"n":8,"title":"Install the logger","time":"30 min","parts":[],"tested":false,"focus":[],
- "actions":["On the laptop, open a second PowerShell window in the logger's folder: <code>cd $HOME\\noise-logger</code>.","Pack the code (it is private, so the Pi can't download it): <code>git archive --format=tar.gz -o ..\\noise-logger.tgz HEAD noise_logger scripts deploy tests requirements.txt pytest.ini</code>.","Copy it to the Pi: <code>scp ..\\noise-logger.tgz yourname@noise-logger.local:</code>.","In the Pi's window, unpack it: <code>mkdir -p noise-logger && tar xzf noise-logger.tgz -C noise-logger</code>.","Update the Pi: <code>sudo apt update && sudo apt full-upgrade -y</code>.","Install the logger and run its self-test: <code>cd ~/noise-logger && bash deploy/install.sh</code>."],
+ "actions":["Check the seven software faults on the Home tab are fixed. If they are not, wait here.","On the laptop, open a second PowerShell window in the logger's folder: <code>cd $HOME\\noise-logger</code>.","Pack the code (it is private, so the Pi can't download it): <code>git archive --format=tar.gz -o ..\\noise-logger.tgz HEAD noise_logger scripts deploy tests requirements.txt pytest.ini</code>.","Copy it to the Pi: <code>scp ..\\noise-logger.tgz yourname@noise-logger.local:</code>.","In the Pi's window, unpack it: <code>mkdir -p noise-logger && tar xzf noise-logger.tgz -C noise-logger</code>.","Update the Pi: <code>sudo apt update && sudo apt full-upgrade -y</code>.","Install the logger and run its self-test: <code>cd ~/noise-logger && bash deploy/install.sh</code>."],
  "check":"The self-test says all tests passed, and the last lines start with \"Installed. Next: calibrate\"."},
-{"n":9,"title":"Put the mic on a high shelf","time":"10 min","parts":["mic"],"tested":false,"focus":["mic", "shelf"],
- "actions":["Choose the room where you hear the noise most and a shelf close to the ceiling.","Stand the mic on its tripod. It picks up from all directions, so it doesn't need to point anywhere exactly.","Its cable is 1.5 m long and the power cable is 1.2 m: the Pi must reach both, and the mic must stay at least 1 m from the Pi's fan.","Plug the mic into a USB socket on the Pi.","Put it where it won't be bumped, and don't move it again."],
+{"n":9,"title":"Put the mic on a high shelf","time":"10 min","parts":["mic"],"tested":false,"focus":["mic", "shelf", "cable"],
+ "actions":["Choose the room where you hear the noise most and a shelf close to the ceiling.","Lay out both cables first. The mic's is 1.5 m and the power cable is 1.2 m: the Pi must reach both, and the mic must stay at least 1 m from the Pi's fan.","Put the Pi on something open and solid, not in a closed cupboard.","Stand the mic on its tripod, pointing up at the ceiling. It picks up from all directions, so it doesn't have to be exact.","Plug the mic into a USB socket on the Pi.","Put it where it won't be bumped, and don't move it again."],
  "check":"The mic stands by itself, is at least 1 m from the Pi, and the cables are not stretched."},
 {"n":10,"title":"Quiet-room measurement, then switch it on","time":"15 min","parts":["mic"],"tested":false,"focus":["mic"],
  "actions":["On the Pi, go to the logger's folder and list the sound cards: <code>cd ~/noise-logger && arecord -l</code>. The mic should show as \"Umik-1\".","List what the logger sees: <code>.venv/bin/python -m noise_logger --list-devices</code>.","Tell the logger to use that mic: <code>.venv/bin/python -c \"from noise_logger import config as c; s=c.load(); s.mic_name='umik'; c.save(s)\"</code>.","With the room quiet and everything in its final place, run this twice (1 minute each): <code>.venv/bin/python -m noise_logger --calibrate</code>.","Turn the logger on, now and at every start: <code>sudo systemctl enable --now noise-logger noise-logger-web noise-logger-nightly.timer</code>."],
- "warn":"If you ever move the mic, run the quiet-room measurement again, then <code>sudo systemctl restart noise-logger</code>.",
+ "warn":"If you ever move the mic: stop the logger with <code>sudo systemctl stop noise-logger</code>, run the quiet-room measurement again, then start it with <code>sudo systemctl start noise-logger</code>. The logger holds the mic while it runs.",
  "check":"The two <code>median_dbfs</code> numbers are within 2 dB of each other, and <code>systemctl is-active noise-logger</code> says <code>active</code>."},
-{"n":11,"title":"Restart test and read the report on your phone","time":"10 min","parts":[],"tested":false,"focus":[],
- "actions":["Restart the Pi: <code>sudo reboot</code>.","Wait 2 minutes.","On your phone (on home Wi-Fi), open <code>http://noise-logger.local:8080</code>.","If the phone can't find that name, type <code>hostname -I</code> on the Pi and open <code>http://</code> + that number + <code>:8080</code>.","Stomp a few times and refresh the page."],
- "check":"The report opens on your phone after the restart, and your stomps appear as new events."}
+{"n":11,"title":"Restart test, phone page and first backup","time":"15 min, plus 5 the next morning","parts":[],"tested":false,"focus":[],
+ "actions":["Restart the Pi: <code>sudo reboot</code>.","Wait 2 minutes.","On your phone (on home Wi-Fi), open <code>http://noise-logger.local:8080</code>.","If the phone can't find that name, type <code>hostname -I</code> on the Pi and open <code>http://</code> + that number + <code>:8080</code>.","Stomp a few times and refresh the page.","The next morning (after 7:05), open PowerShell on the laptop in the logger's folder: <code>cd $HOME\\noise-logger</code>.","Copy a backup to the laptop: <code>powershell -ExecutionPolicy Bypass -File scripts\\pull_backup.ps1 -PiUser yourname</code>.","Optional: to email yourself a dated fingerprint of the log each morning, follow the note at the top of <code>scripts/send_fingerprint.py</code>."],
+ "check":"The page opens on your phone after the restart, your stomps appear as new events, and the backup says it was saved and checked."}
 ]
 </script>
 <script type="application/json" id="model-labels">
-{"board":"Raspberry Pi 5","heatsink":"Heatsink","fan":"Fan","usb-c_power":"USB-C power","micro-hdmi_0":"micro-HDMI","ethernet":"Ethernet","usb_stack_upper":"USB ports",
- "sdcard":"microSD (underneath)","case_base":"Official case (simplified)","case_lid":"Official case (simplified)","mic":"UMIK-1 mic (drawn by eye)","shelf":"High shelf"}
+{"board":"Raspberry Pi 5","heatsink":"Heatsink","fan":"Fan","usb-c_power":"USB-C power",
+ "sdcard":"microSD (underneath)","case_base":"Case base (simplified)","case_lid":"Official case (simplified)","mic":"UMIK-1 (drawn by eye)","shelf":"High shelf","cable":"Cables (drawn short)"}
 </script>
-<script type="application/json" id="label-steps">{"board":6,"heatsink":6,"fan":6,"usb-c_power":7,"micro-hdmi_0":6,"ethernet":6,"usb_stack_upper":10,"sdcard":5,"case_base":6,"case_lid":6,"mic":3,"shelf":9}</script>
+<script type="application/json" id="label-steps">{"board":6,"heatsink":6,"fan":6,"usb-c_power":7,"sdcard":5,"case_base":6,"case_lid":6,"mic":3,"shelf":9,"cable":9}</script>
 <script src="js/app2.js"></script>
 <script>/* iPhone browsers ignore user-scalable=no: cancel their pinch gestures (the 3D view uses pointer events, so it still zooms) */
 ["gesturestart","gesturechange","gestureend"].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();},{passive:false});});</script>

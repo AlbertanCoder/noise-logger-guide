@@ -1,0 +1,89 @@
+<!doctype html><meta charset="utf-8"><title>selftest running</title>
+<body style="margin:0;background:#888"><iframe id="f" src="../index.html#model" style="width:390px;height:900px;border:0;background:#fff"></iframe>
+<pre id="selftest"></pre>
+<script>
+/* Used by scripts/check_page.py (added after the final audit, finding FA-17: the word checks passed while the 3D buttons did nothing).
+   Opens the real page at phone width (390 px), presses things, measures what is drawn, and writes the numbers into the <pre> above.
+   It starts on the 3D tab: a hidden browser only sizes the 3D view when the page opens with it on screen. */
+const f = document.getElementById("f"), out = { errors: [], tabs: {} };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function run() {
+  const d = f.contentDocument, w = f.contentWindow;
+  w.addEventListener("error", (e) => out.errors.push(String(e.message)));
+  for (let i = 0; i < 120 && d.body.dataset.modelLoaded !== "yes"; i++) await wait(200);
+  out.model = d.body.dataset.modelLoaded || "no";
+  out.steps = d.querySelectorAll(".step").length;
+  out.parts = d.querySelectorAll(".part").length;
+  out.bill = (d.getElementById("bill") || {}).textContent || "";
+  out.progress = (d.getElementById("progress-text") || {}).textContent || "";
+  out.links = [...d.querySelectorAll('a[href^="http"]')].map((a) => ({ href: a.href, newTab: a.target === "_blank" }));
+
+  // ---- the 3D view really changes when its buttons are pressed ----
+  // settle = let the clock run, then wait for real drawn frames (a hidden browser fast-forwards timers but draws when it likes)
+  const settle = async (ms) => { await wait(ms); for (let i = 0; i < 6; i++) await new Promise((r) => w.requestAnimationFrame(r)); };
+  const canvas = d.querySelector("#viewer canvas"), small = document.createElement("canvas"); small.width = small.height = 96;
+  const g = small.getContext("2d", { willReadFrequently: true });
+  const shot = () => { g.drawImage(canvas, 0, 0, 96, 96); return g.getImageData(0, 0, 96, 96).data; };
+  const differ = (a, b) => { let s = 0; for (let i = 0; i < a.length; i += 4) s += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]); return s / (a.length / 4) / 3; };
+  const press = (id) => d.getElementById(id).click();
+  for (let i = 0; i < 80 && canvas && !(canvas.width > 0 && canvas.height > 0); i++) await settle(100);   // the view sizes itself once its tab is on screen
+  out.canvas = canvas ? canvas.width + "x" + canvas.height : "none";
+  if (canvas && canvas.width > 0 && out.model === "yes") {
+    await settle(400);
+    const flat = shot(); let lo = 255, hi = 0; for (let i = 0; i < flat.length; i += 4) { lo = Math.min(lo, flat[i]); hi = Math.max(hi, flat[i]); }
+    out.pictureRange = hi - lo;                                   // a blank view has no range
+    press("b-measure"); await settle(1800); const through = shot(); // from above, case see-through, measuring lines on the board
+    out.measurePressed = d.getElementById("b-xray").getAttribute("aria-pressed") === "true";
+    press("b-xray"); await settle(700); const solid = shot();       // same view, case solid again
+    out.seeInsideChange = Math.round(differ(through, solid) * 10) / 10;
+    press("b-assembled"); await settle(300); press("b-exploded"); await settle(2500);
+    out.explodedPressed = d.getElementById("b-exploded").getAttribute("aria-pressed") === "true";
+    const box = d.getElementById("viewer").getBoundingClientRect();
+    out.explodedLabels = [...d.querySelectorAll(".vlabel")].filter((b) => { const r = b.getBoundingClientRect();
+      return b.style.display !== "none" && r.width > 0 && r.top >= box.top - 1 && r.bottom <= box.bottom + 1; }).map((b) => b.textContent);
+    press("b-assembled"); await settle(300);
+    const next = d.getElementById("m-next"); for (let i = 0; i < 5; i++) next.click();   // step 5: everything but the card is ghosted
+    await settle(1500); const ghosted = shot(); let red = 0;
+    for (let i = 0; i < ghosted.length; i += 4) if (ghosted[i] > 140 && ghosted[i + 1] < 90 && ghosted[i + 2] < 120) red++;   // solid case-red
+    out.step5Title = d.getElementById("sp-title").textContent;
+    out.step5SolidRed = Math.round(1000 * red / (ghosted.length / 4)) / 10;   // % of the picture still solid red: the base must be ghosted here
+  }
+
+  const seen = (el) => { const r = el.getBoundingClientRect(), cs = w.getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none"; };
+  const inSentence = (a) => [...a.parentNode.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1); // a link inside running text
+  function measure() {
+    const small = new Set(), taps = [];
+    d.querySelectorAll("body *").forEach((el) => {
+      if (!seen(el) || ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return;
+      const px = parseFloat(w.getComputedStyle(el).fontSize);
+      if (px < 13) small.add(el.tagName.toLowerCase() + (el.className ? "." + el.className : "") + " " + px + "px");
+    });
+    d.querySelectorAll("a,button,summary,label,textarea").forEach((el) => {
+      if (!seen(el) || (el.tagName === "A" && inSentence(el))) return;
+      const r = el.getBoundingClientRect(), extra = el.classList.contains("vlabel") ? 16 : 0; // 3D labels have an invisible 8 px margin each side
+      if (r.height + extra < 43.5 || r.width < 43.5) taps.push((el.textContent || "").trim().slice(0, 24) + " " + Math.round(r.width) + "x" + Math.round(r.height + extra));
+    });
+    return { sideways: d.documentElement.scrollWidth > w.innerWidth, small: [...small], taps };
+  }
+  for (const tab of ["home", "build", "buy", "model"]) {
+    const b = d.querySelector('.tabs [data-tab="' + tab + '"]'); if (!b) { out.errors.push("no tab " + tab); continue; }
+    b.click();
+    d.querySelectorAll("#p-" + tab + " .step").forEach((s) => s.classList.add("open"));
+    d.querySelectorAll("#p-" + tab + " details").forEach((x) => (x.open = true));
+    if (tab === "build") {
+      const imgs = [...d.querySelectorAll(".still img")]; imgs.forEach((i) => (i.loading = "eager"));
+      for (let i = 0; i < 40 && !imgs.every((im) => im.complete); i++) await wait(150);
+      out.pictures = imgs.filter((im) => im.complete && im.naturalWidth > 0).length;
+      out.warnFirst = [...d.querySelectorAll(".step")].every((s) => { const wn = s.querySelector(".note.safety"), ol = s.querySelector("ol");
+        return !wn || !ol || (wn.compareDocumentPosition(ol) & Node.DOCUMENT_POSITION_FOLLOWING) > 0; }); // a step's warning comes before its actions
+    }
+    await wait(300);
+    out.tabs[tab] = measure();
+  }
+
+}
+f.addEventListener("load", () => run().catch((e) => out.errors.push("selftest: " + e.message)).finally(() => {
+  document.getElementById("selftest").textContent = JSON.stringify(out); document.title = "selftest done";
+  fetch("/selftest-result", { method: "POST", body: JSON.stringify(out) }).catch(() => {}); }));   // check_page.py is listening; opened by hand, read the text on the page
+</script></body>
