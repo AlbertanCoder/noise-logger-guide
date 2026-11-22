@@ -18,6 +18,15 @@
   ],
   "board_top_z_mm": 8.41,
   "floor_mm": 3.0,
+  "bought_case_mm": [
+    98.5,
+    70.3,
+    33.0
+  ],
+  "board_corner_in_bought_case_mm": [
+    8.2,
+    7.15
+  ],
   "parts": {
     "case_base": {
       "size_mm": [

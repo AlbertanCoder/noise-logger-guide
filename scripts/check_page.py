@@ -32,7 +32,7 @@ ok(all("grabbed" in r for r in none_rules), f"touch-action:none only after 'Move
 ok("ONE: grabbed ? THREE.TOUCH.ROTATE : null" in viewer and "stopPropagation" in viewer, "one finger and the mouse wheel scroll the page until 'Move the model'")
 ok("touch-action: pan-x pan-y" in html and "gesturestart" in html and "user-scalable=no" in html, "the page itself never zooms (pinch or double-tap, iPhone included)")
 ok(html.count("</html>") == 1, "exactly one </html>")
-ok('aria-pressed' in html and 'Auto-spin' in html and 'id="ring"' in html and 'data-printed=' in html, "pressed states, 'Auto-spin', progress ring and print ticks present")
+ok('aria-pressed' in html and 'Auto-spin' in html and 'id="ring"' in html and 'id="dc-mic"' in html, "pressed states, 'Auto-spin', progress ring and mic-test card present")
 ok('id="next-go"' in html and 'data-tab="build"' in html, "Home's 'Go to Step N' button and a Build tab")
 
 buy = json.loads(re.search(r'id="buy-data">(.*?)</script>', html, re.S).group(1))
@@ -42,8 +42,8 @@ ok(all(l.get("model") and l.get("shop") for l in buy["lines"]), "every part card
 total = round(sum(l["price"] for l in buy["lines"]) * (1 + buy["gst"]), 2)
 totals_py = Path.home() / "noise-logger" / "scripts" / "totals.py"
 out = subprocess.run([sys.executable, str(totals_py)], capture_output=True, text=True).stdout
-m = re.search(r"PLAN-2GB .*?\n\s+parts\s+[\d.]+\s+GST\s+[\d.]+\s+total\s+([\d.]+)", out)
-ok(m and abs(float(m.group(1)) - total) < 0.005, f"page total ${total:.2f} matches totals.py PLAN-2GB (${m.group(1) if m else '?'})")
+m = re.search(r"PLAN-UMIK .*?\n\s+parts\s+[\d.]+\s+GST\s+[\d.]+\s+total\s+([\d.]+)", out)
+ok(m and abs(float(m.group(1)) - total) < 0.005, f"page total ${total:.2f} matches totals.py PLAN-UMIK (${m.group(1) if m else '?'})")
 
 steps = json.loads(re.search(r'id="steps-data">(.*?)</script>', html, re.S).group(1))
 ok(len(steps) == 12 and all(s["check"] and s["actions"] for s in steps), f"{len(steps)} steps, each with actions and a 'check it worked'")
@@ -52,8 +52,8 @@ ok([s["n"] for s in steps if s["tested"]] == [0], "only the step actually done (
 # ---- every step can be followed as written (audit B-01 to B-05, A-02 to A-05) ----
 T = {s["n"]: " ".join([s["title"]] + s["actions"] + [s.get("warn", ""), s["check"]] + s.get("tools", [])) for s in steps}
 by_title = {s["title"]: s["n"] for s in steps}
-mount = next((n for t, n in by_title.items() if t.startswith("Mount the mic")), 99)
-quiet = next((n for t, n in by_title.items() if "quiet-room" in t), -1)
+mount = next((n for t, n in by_title.items() if "high shelf" in t), 99)
+quiet = next((n for t, n in by_title.items() if "Quiet-room" in t), -1)
 
 
 def has(n, *words):
@@ -62,26 +62,29 @@ def has(n, *words):
 
 
 has(0, r".venv\Scripts\python -m pytest")
-has(1, "2GB board only", "64 GB", "4 pairs", "shipping")
-has(3, "85 × 56", "16.4", "14.6", "12.8 × 7.0", "clicks", "cable comes out", "base")
+has(1, "2GB board only", "64 GB", "UMIK-2", "return policy", "shipping")
+has(2, "serial number")
+has(3, "--list-devices", "mic_name='umik'", "--calibrate", "--run", "9 of every 10", "return the mic")
+has(4, "calibration", "serial number")
 has(5, "card reader", "Localisation", "SSH")
-has(6, "thermal pads", "FAN", "8 mm", "10 mm", "straight down")
+has(6, "heatsink", "FAN", "plastic tab", "feet", "button")
 has(7, "yes", "password", "free -h", "0x0")
 has(8, "git archive", r"scp ..\noise-logger.tgz", "tar xzf", "bash deploy/install.sh")
-ok(0 < mount < quiet, f"the mic is mounted (step {mount}) before its level and the quiet room are measured (step {quiet})")
-has(mount, "both cables", "rubbing alcohol" if "rubbing alcohol" in T.get(mount, "") else "Rubbing alcohol", "zip tie", "side by side")
-has(quiet, "arecord -l", "mic_name='USB'", ".venv/bin/python -m noise_logger --calibrate", "gain knob", "systemctl enable --now noise-logger noise-logger-web noise-logger-nightly.timer")
+ok(0 < mount < quiet, f"the mic is placed (step {mount}) before the quiet room is measured (step {quiet})")
+has(mount, "1.5 m", "1.2 m", "at least 1 m", "all directions")
+has(quiet, "arecord -l", "mic_name='umik'", ".venv/bin/python -m noise_logger --calibrate", "systemctl enable --now noise-logger noise-logger-web noise-logger-nightly.timer")
 has(11, "http://noise-logger.local:8080", "hostname -I")
 labels = json.loads(re.search(r'id="label-steps">(.*?)</script>', html, re.S).group(1))
-ok(labels["mic_cradle"] == mount and labels["mic"] == quiet, f"3D labels point to the right steps (holder {labels['mic_cradle']}, mic {labels['mic']})")
+ok(all(1 <= n <= 11 for n in labels.values()) and labels["shelf"] == mount, "3D labels point to real steps")
 ok(all((ROOT / "images" / "steps" / f"step-{s['n']}.jpg").exists() for s in steps), "a picture for every step")
-ok('id="tools"' in html and "zip ties" in html and "s.tools" in app, "the small things are listed on the Buy page and in each step's 'You will need'")
-ok("plus PiShop shipping" in html and "PiShop shipping is extra" in app, "both totals say PiShop shipping is extra")
-ok(not any(re.fullmatch(r"B0[0-9A-Z]{8}", l["model"]) for l in buy["lines"]), "every card shows the maker's model number, not only Amazon's")
-classic = (ROOT / "classic.html").read_text(encoding="utf-8")
-for block in ("buy-data", "steps-data", "model-labels", "label-steps"):
-    get = lambda t: json.loads(re.search(rf'id="{block}">(.*?)</script>', t, re.S).group(1))
-    ok(get(html) == get(classic), f"the classic page carries the same {block}")
+ids = {l["id"] for l in buy["lines"]}
+ok(ids == {"pi", "psu", "case", "sd", "mic"} and all(set(s["parts"]) <= ids | {"all"} for s in steps), f"the 5 chosen parts, and steps only use those ({sorted(ids)})")
+stale = [w for w in ("FIFINE", "K669", "Active Cooler", "Command Large", "M2.5", "case_base.stl", "mic_cradle", 'data-tab="print"', "zip tie", "Print files") if w.lower() in (html + app + viewer).lower()]
+ok(not stale, f"nothing left from the old parts list ({stale})")
+ok("PiShop and Solen shipping" in html and "PiShop and Solen shipping are extra" in app, "both totals say shipping is extra")
+ok("honest dated record" in html and all(w in html for w in ("legal sound meter", "Know whose noise", "Keep conversations", "Play any sound", "Decibel estimates", "Short thump clips", "learns whose noise", "portfolio piece", "sleep record", "next door")), "Home says what it is for, does, does not, and later (agreed 2026-11-22)")
+ok("not run on a Pi yet" in html and "Waiting for a second audit" in html, "Home and Buy say what is unproven")
+ok("url=index.html" in (ROOT / "classic.html").read_text(encoding="utf-8"), "the classic page only forwards to the guide")
 
 public = [ROOT / "index.html", ROOT / "classic.html", ROOT / "js" / "app.js", ROOT / "js" / "app2.js", ROOT / "js" / "viewer.js", ROOT / "README.md"]
 # generic words here; personal words come from a private file that is never published

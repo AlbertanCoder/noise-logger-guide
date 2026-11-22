@@ -1,23 +1,22 @@
 # Build a Noise Logger
 
-**[▶ Open the guide](https://albertancoder.github.io/noise-logger-guide/)** · works on a phone and a desktop · same layout as the Heat-Spotting Drone guide (Home · Build · 3D · Buy · Print) · [classic one-page version](https://albertancoder.github.io/noise-logger-guide/classic.html)
+**[▶ Open the guide](https://albertancoder.github.io/noise-logger-guide/)** · works on a phone and a desktop · same layout as the Heat-Spotting Drone guide (Home · Build · 3D · Buy)
 
 A step-by-step guide to a small Raspberry Pi device that keeps an automatic, timestamped record of noise
 (when, how long, how loud, what kind of sound). It never keeps audio when it hears talking, and its log shows if an entry was changed.
 
 - **Who made it:** Shad ([@AlbertanCoder](https://github.com/AlbertanCoder)) in Edmonton, by directing AI coding tools.
-- **What's in it:** a parts list with live-checked prices and links; a detailed 3D model (103 parts: 40 GPIO pins, ports with openings, cooler fins and a spinning fan) with Exploded, X-ray, Labels, Show measurements and Power-on preview; a step panel that flies the camera to each step; print files for the case and a no-holes mic wall holder; and 12 plain build steps, each with a "check it worked".
+- **What's in it:** a parts list with prices read on the shop pages; a 3D model (the Pi from its official drawing, the bought case and mic simplified) with Exploded, X-ray, Labels, Show measurements and Power-on preview; and 12 plain build steps, each with a "check it worked".
 - **Honest status:** step 0 (the logger on a laptop) is tested; steps 1–11 are written from the parts' documentation and are marked "Not tested yet" until the parts arrive.
 
 ## Where the numbers come from
-- Board size, the 4 mounting holes (58 × 49 mm, Ø2.7), port positions and the cooler: the official Raspberry Pi 5 and Active Cooler mechanical drawings (datasheets.raspberrypi.com).
-- Socket sizes are measured from the lines of the same drawing (which calls its sizes approximate); every window has 1.5 mm to spare per side. Build step 3 measures the real parts before printing.
-- Prices and stock: read on each shop's page on 2026-11-21.
+- Board size, mounting holes, ports and sockets: the official Raspberry Pi 5 drawing (which calls its sizes approximate). Case outside size: the official case brief. The mic is drawn by eye.
+- Prices and stock: read on each shop's page on 2026-11-22.
 
 ## Checks (run before every release)
 ```
-python scripts/make_parts.py     # builds print/*.stl and models/noise-logger.glb from one table of numbers
-python scripts/check_parts.py    # sizes, no supports, posts, the board drops in, room round every socket, button, card, mic holder
+python scripts/make_parts.py     # builds models/noise-logger.glb (and the older print files) from one table of numbers
+python scripts/check_parts.py    # checks the older printable case in print/, which this build no longer uses
 python scripts/make_pictures.py  # retakes the 12 step pictures from the 3D model
 python scripts/check_page.py     # 44 px buttons, 13 px labels, no scroll hijack, links, totals, no personal details
 ```

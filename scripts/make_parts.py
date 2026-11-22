@@ -1,4 +1,4 @@
-"""Builds the printable parts (STL) and the 3D model for the web page (GLB) from ONE table of numbers.
+"""Builds the 3D model for the web page (GLB), and the older printable case (STL, kept but not used in the build), from ONE table of numbers.
 Board numbers: official Raspberry Pi 5 + Active Cooler mechanical drawings, measured from their lines (board corner = 0, 0).
 Numbers marked PROVISIONAL are not in any drawing: measure the real part before printing.
 Run:  python scripts/make_parts.py      (needs: trimesh, manifold3d, numpy)"""
@@ -42,6 +42,10 @@ CARD = dict(c=28.10, w=9.98, z0=-3.00, z1=-2.01, out=1.73)  # memory card, under
 NOTCH = dict(y0=21.6, y1=38.6, z1=8.0, x1=5.0)         # finger notch for the card: wall and floor, open underneath
 GPIO_C = 32.49                                         # header centre from the board corner (the drawing's 29 starts at the screw hole)
 COOLER = dict(w=63.5, d=42.5, h=13.7, fan=30.0)        # READ
+# bought official Pi 5 case: outside size READ from its product brief (98.5 x 70.3 x 33, "approximate"); the shape is simplified
+OCASE = dict(w=98.5, d=70.3, h=33.0, board=(8.2, 7.15), foot=1.0, base_h=20.0, frame_h=6.0, wall=2.0)   # board position measured off the brief's drawing (about 1 mm)
+HEATSINK = (12.0, 17.0, 4.0)                           # READ from the same brief
+UMIK = dict(body_r=10.0, body_l=95.0, neck_r=4.0, neck_l=35.0)   # drawn by eye: the maker does not publish a size
 MIC = dict(d=45.0, l=150.0)                            # FIFINE body: PROVISIONAL until measured (build step 3)
 # mic holder: back plate, two saddles, two pairs of tie wings, shelf with an open cable slot
 PLATE = dict(w=60.0, h=100.0, t=3.0)                   # wall strips are about 93 mm long
@@ -239,34 +243,57 @@ def pi_model():
     add("board__led_pwr", box(1.48, 2.01, 0.99, BX + 0.14, BY + LIGHT["y"] - 1.0, Z_TOP), "#7a1b1b")
     add("pcie", box(3.05, 10.4, 2.5, BX + 1.15, BY + 24.9, Z_TOP), "#202225")
     add("sdcard", box(15.0, CARD["w"], CARD["z1"] - CARD["z0"], BX - CARD["out"], BY + CARD["c"] - CARD["w"] / 2, Z_TOP + CARD["z0"]), "#3b82c4")
-    # Active Cooler: base plate, fins on the left, blower housing on the right (30 x 30 READ), fan blades (spin node)
-    cx0, cy0 = BX + COOLER_AT[0], BY + COOLER_AT[1]
-    zc = Z_TOP + 1.6
-    add("cooler", box(COOLER["w"], COOLER["d"], 1.6, cx0, cy0, zc), "#b8bcc2")
-    for i in range(11):
-        add("cooler__fin", box(1.0, COOLER["d"] - 2, 8.5, cx0 + 1.0 + i * 2.6, cy0 + 1.0, zc + 1.6), "#c4c8cd")
-    fx, fy = cx0 + COOLER["w"] - COOLER["fan"] - 2.0, cy0 + COOLER["d"] - COOLER["fan"] - 2.0
-    housing = diff(box(COOLER["fan"], COOLER["fan"], 9.0, fx, fy, zc + 1.6), [cyl(12.5, 10, fx + 15, fy + 15, zc + 3.0)])
-    add("fan", housing, "#2a2d31")
-    for k in range(9):
-        blade = box(10.5, 2.2, 6.0, 0, -1.1, 0)
-        blade.apply_transform(trimesh.transformations.rotation_matrix(2 * np.pi * k / 9, (0, 0, 1)))
-        blade.apply_translation((fx + 15, fy + 15, zc + 3.4))
-        add("fan__blades", blade, "#3a3e44")
-    add("fan__hub", cyl(4.5, 6.5, fx + 15, fy + 15, zc + 3.2), "#55595f")
+    soc = CHIPS[0]
+    hx, hy, hz = HEATSINK
+    add("heatsink", box(hx, hy, hz, BX + soc[1] + soc[3] / 2 - hx / 2, BY + soc[2] + soc[4] / 2 - hy / 2, Z_TOP + 1.2), "#c4c8cd")
     return P
 
 
-def mic_model(x, y):
-    """FIFINE K669B, approximate shape: body, grille head with rings, gain knob. Sizes to confirm with a tape (step 3)."""
-    r, L = MIC["d"] / 2 - 2, MIC["l"]
-    parts = [("mic", cyl(r, L * 0.72, x, y, SHELF_T), "#1d1f22"), ("mic__grille", cyl(r + 1.0, L * 0.28, x, y, SHELF_T + L * 0.72), "#4a4e54")]
-    for k in range(6):
-        parts.append(("mic__ring", cyl(r + 1.3, 0.8, x, y, SHELF_T + L * 0.72 + 4 + k * 6.5), "#2b2e33"))
-    knob = trimesh.creation.cylinder(radius=4.0, height=5.0, sections=24)
-    knob.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, (1, 0, 0)))
-    knob.apply_translation((x, y + r + 2.0, 3.0 + L * 0.45))
-    parts.append(("mic__knob", knob, "#8a8f96"))
+def official_case():
+    """The bought case, simplified: base with socket openings, frame with the fan, lid."""
+    c, P = OCASE, []
+    ox, oy = c["board"]
+    z0, zb = c["foot"], c["foot"] + c["base_h"]
+    outer = rounded_plate(c["w"], c["d"], c["base_h"], 8.0, 0, 0, z0)
+    inner = rounded_plate(c["w"] - 2 * c["wall"], c["d"] - 2 * c["wall"], c["base_h"], 6.5, c["wall"], c["wall"], z0 + 2.0)
+    cuts = [inner]
+    for f in FRONT.values():
+        cuts.append(box(f["w"] + 4, 12, f["z1"] + 3, ox + f["c"] - f["w"] / 2 - 2, -1, Z_TOP - 1.5))
+    y0 = min(p["c"] - p["w"] / 2 for p in RIGHT.values()) - 1
+    y1 = max(p["c"] + p["w"] / 2 for p in RIGHT.values()) + 1
+    cuts.append(box(14, y1 - y0, 30, c["w"] - 8, oy + y0, Z_TOP - 1))
+    feet = [cyl(5.0, z0 + 0.1, x, y, 0) for x in (14, c["w"] - 14) for y in (12, c["d"] - 12)]
+    P.append(("case_base", union([diff(outer, cuts)] + feet), "#c51f4a"))
+    frame = rounded_plate(c["w"], c["d"], c["frame_h"], 8.0, 0, 0, zb)
+    fx, fy = c["w"] / 2 - 8, c["d"] / 2
+    P.append(("case_frame", diff(frame, [rounded_plate(c["w"] - 8, c["d"] - 8, c["frame_h"], 5.0, 4, 4, zb - 2.0), cyl(17.0, 20, fx, fy, zb - 5),
+                                         box(14, y1 - y0, 30, c["w"] - 8, oy + y0, zb - 20)]), "#f4f1ea"))
+    P.append(("fan", diff(cyl(19.0, 6.0, fx, fy, zb - 2.0), [cyl(17.0, 8, fx, fy, zb - 3)]), "#2a2d31"))
+    for k in range(7):
+        blade = box(11.0, 2.4, 4.0, 4.0, -1.2, 0)
+        blade.apply_transform(trimesh.transformations.rotation_matrix(2 * np.pi * k / 7, (0, 0, 1)))
+        blade.apply_translation((fx, fy, zb - 1.0))
+        P.append(("fan__blades", blade, "#3a3e44"))
+    P.append(("fan__hub", cyl(5.0, 5.0, fx, fy, zb - 1.5), "#55595f"))
+    zl = zb + c["frame_h"]
+    P.append(("case_lid", rounded_plate(c["w"], c["d"], c["h"] - zl, 8.0, 0, 0, zl), "#f4f1ea"))
+    return [(k, colored(m, col, k)) for k, m, col in P]
+
+
+def umik_model(x, y):
+    """miniDSP UMIK-1 on its mini tripod on a high shelf: shape drawn by eye, see-through in the viewer."""
+    z = 12.0
+    u = UMIK
+    parts = [("shelf", box(150, 110, z, x - 75, y - 55, 0), "#b98a5a")]
+    for k in range(3):
+        a = 2 * np.pi * k / 3 + np.pi / 2
+        leg = trimesh.creation.cylinder(radius=2.0, segment=[[x, y, z + 32], [x + 38 * np.cos(a), y + 38 * np.sin(a), z + 2]])
+        parts.append(("mic__leg", leg, "#2b2e33"))
+    zb = z + 30
+    parts += [("mic", cyl(u["body_r"], u["body_l"], x, y, zb), "#1d1f22"),
+              ("mic__neck", cyl(u["neck_r"], u["neck_l"], x, y, zb + u["body_l"]), "#c4c8cd"),
+              ("mic__tip", cyl(u["neck_r"] + 0.6, 5.0, x, y, zb + u["body_l"] + u["neck_l"]), "#2b2e33"),
+              ("mic__light", cyl(1.5, 1.0, x, y - u["body_r"] - 0.2, zb + 40), "#3b82c4")]
     return [(k, colored(m, c, k)) for k, m, c in parts]
 
 
@@ -292,24 +319,18 @@ def main():
         COLOR_MAP[name] = "#%02x%02x%02x" % tuple(int(v) for v in rgba[:3])
 
     COLOR_MAP = {}
-    for key, m in [("case_base", colored(base, "#e8e2d4", "Printed case (base)")),
-                   ("case_lid", colored(lid_placed, "#e8e2d4", "Printed lid"))] + pi_model():
+    shift = (OCASE["board"][0] - BX, OCASE["board"][1] - BY, 0)   # the Pi sits where it does in the bought case
+    for key, m in pi_model():
+        m.apply_translation(shift)
         put(key, m)
-    cr = colored(cradle, "#e8e2d4", "Mic wall holder")
-    turn = trimesh.transformations.rotation_matrix(np.pi, (0, 0, 1))      # seat and tie slots face the front of the 3D view
-    turn[:3, 3] = (OUT_W + 60, OUT_H, 0)
-    cr.apply_transform(turn)
-    scene.add_geometry(cr, node_name="mic_cradle", geom_name="mic_cradle")
-    COLOR_MAP["mic_cradle"] = "#e8e2d4"
-    for key, m in mic_model(0, PLATE["t"] + 3 + MIC["d"] / 2):
-        m.apply_transform(turn)
+    for key, m in official_case() + umik_model(OCASE["w"] + 130, OCASE["d"] / 2):
         put(key, m)
     scene.export(OUT_MODEL / "noise-logger.glb")
     (OUT_MODEL / "colors.json").write_text(json.dumps(COLOR_MAP, indent=0))
     numbers = {"outer_mm": [round(OUT_W, 2), round(OUT_H, 2), round(WALL_TOP + LID_T, 2)],
                "inner_mm": [round(INNER_W, 2), round(INNER_H, 2)], "hole_spacing_mm": [58.0, 49.0],
                "board_corner_in_case_mm": [round(BX, 2), round(BY, 2)], "board_top_z_mm": round(Z_TOP, 2), "floor_mm": FLOOR,
-               "parts": report}
+               "bought_case_mm": [OCASE["w"], OCASE["d"], OCASE["h"]], "board_corner_in_bought_case_mm": list(OCASE["board"]), "parts": report}
     (ROOT / "models" / "numbers.json").write_text(json.dumps(numbers, indent=2))
     print(json.dumps(numbers, indent=2))
 

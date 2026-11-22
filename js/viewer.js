@@ -9,15 +9,15 @@ const LABELS = JSON.parse($("model-labels").textContent);
 const LABEL_STEP = JSON.parse($("label-steps").textContent);
 const STEPS = JSON.parse($("steps-data").textContent);
 const PI = ["board", "gpio", "usb-c_power", "micro-hdmi_0", "micro-hdmi_1", "ethernet", "usb_stack_lower", "usb_stack_upper",
-  "mipi", "poe", "fan_plug", "power_button", "pcie", "sdcard", "cooler", "fan"];
-const TO_CONFIRM = ["mic"]; // the mic's shape and size are still to confirm with a tape (step 3)
-const CASE = ["case_base", "case_lid"];
-const OVERVIEW_LABELS = ["case_base", "case_lid", "mic_cradle", "mic"];
-const EXPLODED_LABELS = ["case_lid", "cooler", "board", "case_base", "sdcard"];
-const BOX_PARTS = ["case_base", "case_lid", ...PI];
+  "mipi", "poe", "fan_plug", "power_button", "pcie", "sdcard", "heatsink", "fan"];
+const TO_CONFIRM = ["mic"]; // the mic's shape is drawn by eye, so it is slightly see-through
+const CASE = ["case_base", "case_frame", "case_lid"];
+const OVERVIEW_LABELS = ["case_lid", "mic", "shelf"];
+const EXPLODED_LABELS = ["case_lid", "fan", "heatsink", "board", "case_base"];
+const BOX_PARTS = [...CASE, ...PI];
 // camera direction per view (after loading, model Z is screen-up)
 const VIEWS = { overview: [0.25, 0.8, 1.0], top: [0.001, 1, 0.02], front: [0.1, 0.45, 1.0], under: [-0.6, -0.35, 0.8], mic: [0.6, 0.35, 1.0] };
-const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["top", "measure"], 4: ["overview"], 5: ["under"],
+const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under"],
   6: ["front", "assemble"], 7: ["front", "power"], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
 const DEFAULT_CAPTION = caption.textContent;
 
@@ -55,7 +55,7 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
     const s = gltf.scene; gltfScene = s; s.rotation.x = -Math.PI / 2; root.add(s);
     s.traverse((o) => {
       if (!o.isMesh) return;
-      const k = baseKey(o.name), metal = /pin|cooler|fin|usb_stack|ethernet|hdmi|usb-c|soc|wifi/.test(o.name) && !/tongue|led/.test(o.name);
+      const k = baseKey(o.name), metal = /pin|heatsink|neck|usb_stack|ethernet|hdmi|usb-c|soc|wifi/.test(o.name) && !/tongue|led/.test(o.name);
       o.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(colors[o.name] || colors[o.name.split("#")[0]] || "#c9ced3"),
         roughness: metal ? 0.35 : 0.7, metalness: metal ? 0.55 : 0.05 });
       o.castShadow = true; o.receiveShadow = true;
@@ -92,7 +92,7 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
     });
     if (new URLSearchParams(location.search).get("view") === "top") { // proof view: the bare board from above, like the official drawing
       topView = true; labelsOn = false;
-      Object.keys(groups).forEach((k) => { if (!PI.includes(k) || k === "cooler" || k === "fan") groups[k].forEach((o) => (o.visible = false)); });
+      Object.keys(groups).forEach((k) => { if (!PI.includes(k) || k === "heatsink" || k === "fan") groups[k].forEach((o) => (o.visible = false)); });
       aimAt("top", false, ["board"]);
     } else {
       const q = new URLSearchParams(location.search), st = parseInt(q.get("step") || "0", 10);
@@ -138,8 +138,8 @@ function setExploded(on, animate = true) {
   const target = (o) => {
     const p = home.get(o).clone(), k = o.userData.key; if (!on) return p;
     // the glTF scene is turned -90° about X, so model Z (up) is the scene's local Z
-    if (k === "case_lid") p.z += 45; else if (PI.includes(k)) p.z += 22;
-    if (k === "cooler" || k === "fan") p.z += 14;
+    if (k === "case_lid") p.z += 78; else if (k === "case_frame" || k === "fan") p.z += 52; else if (PI.includes(k)) p.z += 22;
+    if (k === "heatsink") p.z += 12;
     return p;
   };
   if (!animate) { home.forEach((h, o) => o.position.copy(target(o))); partTween = null; }
@@ -182,14 +182,14 @@ $("b-grab").onclick = () => {
 // ---------- measurements drawn on the model (official numbers) ----------
 function buildMeasurements(s, num) {
   measureGroup = new THREE.Group(); measureGroup.visible = false; s.add(measureGroup);
-  const [bx, by] = num.board_corner_in_case_mm, z = num.board_top_z_mm + 0.4; // just above the board
-  const ow = num.outer_mm[0];
+  const [bx, by] = num.board_corner_in_bought_case_mm, z = num.board_top_z_mm + 0.4; // just above the board
+  const ow = num.bought_case_mm[0];
   const mat = new THREE.LineBasicMaterial({ color: 0xc2571b });
   [{ a: [bx, by - 9, z], b: [bx + 85, by - 9, z], text: "85 mm (official)" },
    { a: [bx - 9, by, z], b: [bx - 9, by + 56, z], text: "56 mm" },
    { a: [bx + 3.5, by + 3.5, z], b: [bx + 61.5, by + 3.5, z], text: "holes 58 mm" },
    { a: [bx + 61.5, by + 3.5, z], b: [bx + 61.5, by + 52.5, z], text: "holes 49 mm" },
-   { a: [0, -16, 0], b: [ow, -16, 0], text: ow.toFixed(1) + " mm case" }].forEach((L) => {
+   { a: [0, -16, 0], b: [ow, -16, 0], text: ow.toFixed(1) + " mm case (official)" }].forEach((L) => {
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...L.a), new THREE.Vector3(...L.b)]), mat);
     const el = document.createElement("span"); el.className = "mlabel"; el.textContent = L.text; host.appendChild(el);
     line.userData.el = el; measureGroup.add(line);
@@ -218,7 +218,7 @@ function renderStep(i, animate = true) {
   xray = measure || view === "under"; press("b-xray", xray);
   paint();
   caption.textContent = focus ? "Step " + s.n + ": " + s.title + " — the highlighted parts are the ones this step uses." : DEFAULT_CAPTION;
-  const aim = view === "mic" ? ["mic", "mic_cradle"] : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
+  const aim = view === "mic" ? ["mic", "shelf"] : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
   if (extra === "measure") focus = ["board"];
   paint();
   aimAt(view, animate, aim && aim.length ? aim : null);
