@@ -120,6 +120,14 @@ async function run() {
     seekB.value = 1000; seekB.dispatchEvent(new w.Event("input", { bubbles: true })); await settle(200);
     out.playEndLid = w.__view().lidUp;                                          // the slider at its end: everything in place
 
+    // ---- step 2: the slider's end is where playing ends, with the case open (audit of 24 Nov 2026, finding 9) ----
+    for (let i = 0; i < 4; i++) d.getElementById("m-back").click();
+    await settle(1500);
+    const slide = async (v) => { seekB.value = v; seekB.dispatchEvent(new w.Event("input", { bubbles: true })); await settle(200); return Math.round(w.__view().lidUp); };
+    out.step2 = { title: d.getElementById("sp-title").textContent, atRest: Math.round(w.__view().lidUp), sliderStart: await slide(0), sliderEnd: await slide(1000),
+      openPressed: d.getElementById("b-exploded").getAttribute("aria-pressed") === "true" };
+    for (let i = 0; i < 4; i++) next.click();
+
     // ---- step 11: Play must show something (audit of 24 Nov 2026, finding 4: with the case shut, nothing changed) ----
     for (let i = 0; i < 5; i++) next.click();
     await settle(1500);

@@ -11,7 +11,7 @@
 
   function boot() {
     start(JSON.parse(document.getElementById("buy-data").textContent), JSON.parse(document.getElementById("steps-data").textContent));
-    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js?v=a14a175f"; document.body.appendChild(m);   // the ?v= fingerprint is written by scripts/make_pictures.py
+    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js?v=b3089f83"; document.body.appendChild(m);   // the ?v= fingerprint is written by scripts/make_pictures.py
   }
   boot();
 

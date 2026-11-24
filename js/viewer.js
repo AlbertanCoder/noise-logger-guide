@@ -345,7 +345,10 @@ function endPlay() { if (anim.def) { anim.t = anim.def.dur; anim.playing = false
 function seek(t) {
   if (!anim.def) return;
   anim.playing = false; anim.t = Math.max(0, Math.min(anim.def.dur, t));
-  if (animMoving() && !anim.def.explode && exploded) setExploded(false, false);
+  // a step that opens the case (step 2): the slider decides how far open it is, at its very end too
+  // (audit of 24 Nov 2026, finding 9: a jump from the start to the end left the case shut, though playing ends with it open)
+  if (anim.def.explode) { explodeTween = null; explodeAmt = keyAt(anim.def.explode, anim.t); exploded = explodeAmt > 0.5; }
+  else if (animMoving() && exploded) setExploded(false, false);
   place(); showPlay();
 }
 function play() {
