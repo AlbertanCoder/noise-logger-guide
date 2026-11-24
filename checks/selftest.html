@@ -213,6 +213,14 @@ async function run() {
   dp.getElementById("b-measure").click(); await settleP(1800);
   out.pc.measureMarks = marksInside(dp);
   dp.getElementById("b-measure").click(); await settleP(300);
+  // Back / Next right under the model on a PC too (audit of 24 Nov 2026, finding 3): on screen together with the model, and it stays put
+  const nextP = dp.getElementById("m-next"), place = () => { const r = nextP.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; };
+  const vP = dp.getElementById("viewer").getBoundingClientRect(), before = place(), stepBefore = parseInt(dp.getElementById("sp-title").textContent, 10);
+  nextP.click(); await settleP(300); nextP.click(); await settleP(900);
+  out.pc.stepRow = { shown: before[2] > 43 && before[3] > 43, withModel: vP.top >= 0 && before[1] >= vP.bottom && before[1] + before[3] <= wp.innerHeight,
+    stays: JSON.stringify(place()) === JSON.stringify(before), moved: parseInt(dp.getElementById("sp-title").textContent, 10) - stepBefore,
+    playRowTop: Math.round(dp.getElementById("b-play").getBoundingClientRect().top), at: before };
+  dp.getElementById("m-back").click(); dp.getElementById("m-back").click(); await settleP(300);
 
   // ---- a slow connection (audit of 24 Nov 2026, finding 2): check_page.py holds the model file back N seconds for an address with slow=N ----
   f.style.width = "390px";

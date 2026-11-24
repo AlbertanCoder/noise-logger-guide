@@ -262,6 +262,9 @@ ok(t.get("measurePressed") is True and t.get("seeInsideChange", 0) > 6, f"'See i
 pc = t.get("pc") or {}
 ok(len(t.get("measureMarks", [])) == 5, f"'Show measurements' at 390 px: all 5 numbers are whole inside the picture ({t.get('measureMarks')})")
 ok(pc.get("width", 0) >= 900 and len(pc.get("measureMarks", [])) == 5, f"'Show measurements' at PC width ({pc.get('width')} px): all 5 numbers are whole inside the picture ({pc.get('measureMarks')})")
+row = pc.get("stepRow") or {}
+ok(row.get("shown") is True and row.get("withModel") is True and row.get("stays") is True and row.get("moved") == 2 and row.get("playRowTop") == (row.get("at") or [0, -1])[1],
+   f"at PC width Back / Next sit right under the model, on screen with it, beside Play; two presses on the same spot move two steps ({row})")
 ok(len(t.get("explodedLabels", [])) == 5, f"Exploded view: all 5 labels are inside the picture, lid included ({t.get('explodedLabels')})")
 ok(str(t.get("step5Title", "")).startswith("5.") and t.get("step5SolidRed", 100) < 2, f"stepping to step 5 ghosts the case so the card shows ({t.get('step5SolidRed')}% of the picture is still solid red)")
 ok(t.get("viewerH", 0) >= 300 and t.get("touchAction") == "none" and not t.get("grabButton"), f"at 390 px the 3D view is {t.get('viewerH')} px tall, one finger turns it (touch-action {t.get('touchAction')!r}), no 'Move the model'")
