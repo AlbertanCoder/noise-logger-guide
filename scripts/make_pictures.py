@@ -17,15 +17,40 @@ CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 AT = {6: "&at=0.5"}   # step 6's picture is taken half way through its animation: the Pi in the base, the frame on its way down
 
 
+SENT = {}
+ARRIVED = threading.Event()
+
+
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def do_POST(self):  # the picture frame sends the drawn 3D view here, as a PNG, once it has really been drawn
+        if self.path == "/step-picture":
+            SENT["png"] = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            ARRIVED.set()
+        self.send_response(204)
+        self.end_headers()
+
 
 def shot(url, out, size="660,420"):
+    """Opens the picture frame in a hidden Chrome, in real time, and waits for it to send the drawn 3D view.
+    (Until 24 Nov 2026 the browser's own screenshot was taken after a fast-forwarded wait; step 7 came out empty about
+    every second time, because the hidden browser had not drawn a frame yet.) Returns False if nothing arrived."""
+    SENT.clear()
+    ARRIVED.clear()
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as prof:
-        subprocess.run([CHROME, "--headless=new", "--hide-scrollbars", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", f"--user-data-dir={prof}",
-                        "--no-first-run", f"--window-size={size}", "--virtual-time-budget=14000", f"--screenshot={out}", url], capture_output=True, timeout=120)
+        proc = subprocess.Popen([CHROME, "--headless=new", "--hide-scrollbars", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", f"--user-data-dir={prof}",
+                                 "--no-first-run", f"--window-size={size}", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ARRIVED.wait(timeout=60)
+        proc.terminate()
+        try:
+            proc.wait(timeout=20)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    if "png" in SENT:
+        Path(out).write_bytes(SENT["png"])
+    return "png" in SENT
 
 
 def fingerprint(*names):
@@ -59,10 +84,11 @@ def main():
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         for s in steps:
             png = Path(tmp) / f"{s['n']}.png"
-            for attempt in range(3):   # now and then the hidden browser takes its picture before the model is drawn: try again
-                shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels" + AT.get(s["n"], ""), png)
-                im = Image.open(png).convert("RGB").crop((0, 0, 640, 388))
-                colours = len(im.resize((80, 48)).getcolors(10000) or [])
+            for attempt in range(3):   # a second and third try, in case the hidden browser did not answer
+                colours = 0
+                if shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels" + AT.get(s["n"], ""), png):
+                    im = Image.open(png).convert("RGB").crop((0, 0, 640, 388))
+                    colours = len(im.resize((80, 48)).getcolors(10000) or [])
                 if colours > 40:
                     break
             assert colours > 40, f"step {s['n']}: the picture looks empty after 3 tries ({colours} colours)"
