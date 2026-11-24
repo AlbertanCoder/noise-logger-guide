@@ -7,6 +7,7 @@ import html as htmllib
 import http.server
 import json
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -48,8 +49,47 @@ ok('id="b-reset"' in html and ">Reset view<" in html and 'id="b-full"' in html a
 ok(">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan<" in html and "pinch to zoom" in viewer, "the hint line in the drone guide's words, with the touch wording on touch screens")
 vh = re.search(r"@media \(min-width:900px\)\{#viewer\{height:min\((\d+)px", css)
 ok(vh and int(vh.group(1)) >= 560 and "grid-template-columns:1fr 320px" not in css, f"a big 3D frame on a laptop (about 585 px) with the step panel under it ({vh.group(1) if vh else None} px)")
+# Rounds 3 and 4 of the 3D plan (24 Nov 2026): the Blender model, the drone guide's look, highlight, tap to name, Play per step
+glb = (ROOT / "models" / "noise-logger.glb").read_bytes()
+gj = json.loads(glb[20:20 + struct.unpack_from("<I", glb, 12)[0]])
+parts = {n["name"]: n.get("extras", {}) for n in gj["nodes"] if "mesh" in n}
+points = {n["extras"]["key"]: n["extras"].get("ride") for n in gj["nodes"] if n.get("extras", {}).get("kind") == "label"}
+ok(len(glb) < 500 * 1024 and "Blender" in gj["asset"].get("generator", ""), f"the model is built in Blender and stays under 500 KB ({len(glb) // 1024} KB, {len(parts)} parts)")
+need = ["case_base", "case_frame", "case_lid", "board", "fan", "fan__hub", "fan__blades", "heatsink", "sdcard", "usb-c_power", "mic", "shelf", "cable__usb", "cable__power", "cable__plug", "cable__powerplug", "cable__micplug"]
+ok(all(n in parts for n in need), f"the model keeps the part names the 3D view relies on ({[n for n in need if n not in parts]})")
+ok(all(e.get("part") and e.get("acc") in ("official", "simplified", "eye") for e in parts.values()), "every part of the model carries a plain name and how exact its drawing is")
+ok(parts.get("mic", {}).get("acc") == "eye" and parts.get("board", {}).get("acc") == "official" and parts.get("case_base", {}).get("acc") == "simplified",
+   "the mic is tagged drawn by eye, the Pi from the official drawing, the case simplified")
+colours = json.loads((ROOT / "models" / "colors.json").read_text(encoding="utf-8"))
+ok(set(colours) == set(parts) and all(re.fullmatch(r"#[0-9a-f]{6}", c) for c in colours.values()), "colors.json names every part of the model, and nothing else")
+numbers = json.loads((ROOT / "models" / "numbers.json").read_text(encoding="utf-8"))
+pos = gj["accessors"][gj["meshes"][next(n["mesh"] for n in gj["nodes"] if n.get("name") == "board")]["primitives"][0]["attributes"]["POSITION"]]
+bx, by = numbers["board_corner_in_bought_case_mm"]
+ok(abs(pos["min"][0] - bx) < 0.01 and abs(pos["min"][1] - by) < 0.01 and abs(pos["max"][0] - bx - 85) < 0.01 and abs(pos["max"][1] - by - 56) < 0.01 and abs(pos["max"][2] - numbers["board_top_z_mm"]) < 0.01,
+   f"the board in the model is 85 x 56 mm and sits where numbers.json says ({[round(v, 2) for v in pos['min']]} to {[round(v, 2) for v in pos['max']]})")
+case_top = max(gj["accessors"][gj["meshes"][n["mesh"]]["primitives"][0]["attributes"]["POSITION"]]["max"][2] for n in gj["nodes"] if n.get("name") == "case_lid")
+ok(abs(case_top - numbers["bought_case_mm"][2]) < 0.01, f"the case in the model is as tall as the maker's number ({case_top:.1f} mm)")
+builder = (ROOT / "scripts" / "build_model_blender.py").read_text(encoding="utf-8")
+ok("import make_parts as M" in builder and not re.search(r"(?<![\d.])(98\.5|70\.3|85\.0|56\.0|58\.0|49\.0|1\.41)(?![\d])", builder),
+   "the Blender script reads its measurements from make_parts.py and retypes none of them")
+labels_json = json.loads(re.search(r'id="model-labels">(.*?)</script>', html, re.S).group(1))
+ok(set(points) == set(labels_json) and all(r in parts for r in points.values()), f"the model carries a point for every 3D label ({sorted(set(labels_json) ^ set(points))})")
+ok("ACESFilmicToneMapping" in viewer and "toneMappingExposure = 1.05" in viewer and "0xf7f2e8" in viewer and "opacity: 0.16" in viewer and viewer.count("DirectionalLight(") == 4 and "HemisphereLight(" in viewer,
+   "the drone guide's look: cream backdrop, ACES tone 1.05, four lamps and a sky light, a soft 0.16 shadow")
+ok("0.62 * b.opacity" in viewer and "0xc2571b" in viewer and "emissiveIntensity = pale ? 0.1 : 0.75" in viewer, "the step's parts glow orange and the other parts dim to 62%")
+ok('store.get("labels") === "1"' in viewer and 'store.set("labels"' in viewer and "try { window.localStorage" in viewer and 'id="b-labels" aria-pressed="false"' in html
+   and html.index('id="b-labels"') < html.index('<details class="more">'),
+   "labels are hidden at first, a Labels button in the main row shows them, and the choice is remembered (storage may be missing)")
+ok(all(w in viewer for w in ("from the official drawing", "simplified", "drawn by eye", "}, 5000)", "< 6) pick(", '"pointermove"', 'e.pointerType !== "mouse"')),
+   "tapping a part shows its name and how exact its drawing is for 5 s; pointing at it with the mouse does too; a drag is not a tap")
+ok('id="b-play"' in html and 'id="v-seek"' in html and "Nothing moves in this step" in viewer and ".vtag{" in css, "a Play button and a slider under the 3D view, and a style for the tap name")
+ok("js/viewer.js" in app and "poster" not in html + viewer, "the 3D view loads live as soon as the page opens, on a phone too (no still picture first)")
 ok("touch-action: pan-x pan-y" in html and "gesturestart" in html and "user-scalable=no" in html, "the page itself never zooms (pinch or double-tap, iPhone included)")
 ok(html.count("</html>") == 1, "exactly one </html>")
+tab_marks = re.findall(r'<button role="tab" data-tab="(\w+)"[^>]*>(.*?)</button>', html)
+ok(len(tab_marks) == 8 and all(re.match(r'<svg class="tabic" aria-hidden="true"><use href="#i-\w+"/></svg>[A-Za-z0-9]+$', m) for _, m in tab_marks)
+   and all(f'<symbol id="i-{n}"' in html for n in ("home", "build", "3d", "buy")),
+   "the four tab icons are one family of plain outlines, on the phone's bottom bar and the computer's side bar")
 ok('aria-pressed' in html and 'Auto-spin' in html and 'id="ring"' in html and 'id="dc-mic"' in html, "pressed states, 'Auto-spin', progress ring and mic-test card present")
 ok('id="next-go"' in html and 'data-tab="build"' in html, "Home's 'Go to Step N' button and a Build tab")
 ok("needsUpdate = true" in viewer, "the 3D view tells the drawing library when a part turns see-through (final audit FA-03)")
@@ -216,6 +256,20 @@ ok(t.get("resetBack", 99) < 1.5 and abs(t.get("resetDist", 0) - 1) < 0.01, f"Res
 ok(t.get("fullOpen") is True and t.get("fullH", 0) > t.get("viewerH", 0) and t.get("fullLabel") == "Close full screen" and t.get("fullClosed") is True,
    f"Full screen opens ({t.get('fullH')} px tall) and Esc closes it")
 ok(t.get("hint", "").startswith("Drag to rotate"), f"the hint line shows under the 3D view ({t.get('hint')!r})")
+ok(t.get("tone") == 1.05 and t.get("poster") is False, f"the page draws with the drone guide's tone setting ({t.get('tone')}) and shows the live 3D with no still picture first")
+ok(t.get("micGlow") == "c2571b" and t.get("micGlowPower", 0) > 0.5 and t.get("shelfOpacity") == 0.62, f"step 3: the mic glows orange ({t.get('micGlow')}) and the shelf dims to 62% ({t.get('shelfOpacity')})")
+ok("drawn by eye" in t.get("tapTag", "") and "UMIK-1" in t.get("tapTag", "") and t.get("dragTag") == "" and t.get("tagGone") is True,
+   f"tapping the mic says {t.get('tapTag')!r}; a drag shows nothing ({t.get('dragTag')!r})")
+pl = t.get("play") or {}
+ok(t.get("playOffAtStep0") is True and str(t.get("playTitle", "")).startswith("6.") and t.get("playReady") is True, "Play is off where nothing moves (step 0) and ready in step 6")
+ok(pl.get("going") is True and pl.get("lidUp", 0) > 40 and pl.get("t2", 0) > pl.get("t1", 9) > 0.5 and "Pause" in pl.get("label", ""),
+   f"Play animates the step: the lid is {pl.get('lidUp')} mm up at {pl.get('t1')} s and it keeps going ({pl.get('t2')} s)")
+ok(pl.get("going") is True and pl.get("zoomed", 1) < 0.99, f"you can zoom while it plays (distance x{pl.get('zoomed')})")
+ok(t.get("paused") is True and t.get("playEndLid") == 0, f"Pause stops it, and the slider's end puts every part in place (lid {t.get('playEndLid')} mm up)")
+ok(t.get("labelsAtStart") is False and t.get("labelsShownAtStart") == 0, f"no labels on the model until they are asked for ({t.get('labelsShownAtStart')} shown at first)")
+ok("drawn by eye" in t.get("pointTag", "") and t.get("pointGone") is True, f"the mouse resting on the mic says {t.get('pointTag')!r}, and the name goes when it moves off")
+ok(t.get("labelsStored") == "1" and t.get("labelsAfterReload") is True and t.get("labelsButtonAfterReload") == "true" and t.get("labelsBackOff") == "0",
+   f"the Labels choice survives a reload (stored {t.get('labelsStored')!r}, after reload {t.get('labelsAfterReload')})")
 ok(not t.get("errors"), f"no script errors while the page was used ({t.get('errors')})")
 links = t.get("links", [])
 same_tab = [l["href"] for l in links if not l["newTab"]]

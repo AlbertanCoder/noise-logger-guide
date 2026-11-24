@@ -13,6 +13,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+AT = {6: "&at=0.5"}   # step 6's picture is taken half way through its animation: the Pi in the base, the frame on its way down
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -33,10 +34,13 @@ def main():
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         for s in steps:
             png = Path(tmp) / f"{s['n']}.png"
-            shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels", png)
-            im = Image.open(png).convert("RGB").crop((0, 0, 640, 388))
-            colours = len(im.resize((80, 48)).getcolors(10000) or [])
-            assert colours > 40, f"step {s['n']}: the picture looks empty ({colours} colours)"
+            for attempt in range(3):   # now and then the hidden browser takes its picture before the model is drawn: try again
+                shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels" + AT.get(s["n"], ""), png)
+                im = Image.open(png).convert("RGB").crop((0, 0, 640, 388))
+                colours = len(im.resize((80, 48)).getcolors(10000) or [])
+                if colours > 40:
+                    break
+            assert colours > 40, f"step {s['n']}: the picture looks empty after 3 tries ({colours} colours)"
             im.save(ROOT / "images" / "steps" / f"step-{s['n']}.jpg", quality=86)
             print(f"step {s['n']}: saved ({colours} colours)")
     srv.shutdown()

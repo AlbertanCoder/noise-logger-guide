@@ -37,6 +37,9 @@ async function run() {
     out.measurePressed = d.getElementById("b-xray").getAttribute("aria-pressed") === "true";
     press("b-xray"); await settle(700); const solid = shot();       // same view, case solid again
     out.seeInsideChange = Math.round(differ(through, solid) * 10) / 10;
+    out.labelsAtStart = w.__view().labels;                          // labels stay hidden until asked for (Shad, 24 Nov 2026)
+    out.labelsShownAtStart = [...d.querySelectorAll(".vlabel")].filter((b) => b.style.display !== "none").length;
+    press("b-labels");                                              // on: stored, and kept on for the label checks below
     press("b-assembled"); await settle(300); press("b-exploded"); await settle(2500);
     out.explodedPressed = d.getElementById("b-exploded").getAttribute("aria-pressed") === "true";
     const box = d.getElementById("viewer").getBoundingClientRect();
@@ -83,6 +86,37 @@ async function run() {
     if (d.fullscreenElement) await d.exitFullscreen();
     await settle(500);
     out.fullClosed = !wrap.classList.contains("v-overlay") && !d.fullscreenElement && d.getElementById("b-full").textContent === "Full screen";
+
+    // ---- Rounds 3 and 4 (24 Nov 2026): the drone guide's look, orange highlight, tap to name, Play per step ----
+    out.tone = w.__view().tone;                                                 // 1.05 = the drone guide's tone setting
+    out.poster = !!d.querySelector("#p-model img");                             // no still picture first: the 3D is live straight away
+    const playB = d.getElementById("b-play"), seekB = d.getElementById("v-seek");
+    out.playOffAtStep0 = playB.disabled && d.getElementById("v-playnote").textContent === "Nothing moves in this step";
+    for (let i = 0; i < 3; i++) next.click();                                   // step 3: the mic glows, the rest dims
+    await settle(1500);
+    const v3 = w.__view(); out.micGlow = v3.micGlow; out.micGlowPower = v3.micGlowPower; out.shelfOpacity = Math.round(v3.shelfOpacity * 100) / 100;
+    const spot = w.__spot("mic__tube");
+    w.__tap(spot.x, spot.y, 40); out.dragTag = w.__view().tag;                  // a drag is never a tap: no name appears
+    w.__tap(spot.x, spot.y); out.tapTag = w.__view().tag;                       // a tap names the part and says how exact its drawing is
+    w.__tap(r0.left + 3, r0.top + 3); out.tagGone = w.__view().tag === "";      // a tap on nothing puts the name away
+    w.__point(spot.x, spot.y); out.pointTag = w.__view().tag;                   // the mouse resting on a part names it
+    w.__point(r0.left + 3, r0.top + 3); out.pointGone = w.__view().tag === "";  // and the name goes when the mouse moves off
+    for (let i = 0; i < 3; i++) next.click();                                   // step 6: Play puts the parts together
+    await settle(1500);
+    out.playTitle = d.getElementById("sp-title").textContent;
+    const p0 = w.__view(); out.playReady = !playB.disabled && p0.lidUp === 0 && p0.playDur > 5;
+    playB.click(); await settle(1300);
+    const p1 = w.__view(); wheel(-300); await settle(700);                      // zoom in while it plays
+    const p2 = w.__view();
+    out.play = { going: p1.playing && p2.playing, label: playB.textContent, lidUp: Math.round(p1.lidUp), t1: Math.round(p1.playT * 10) / 10, t2: Math.round(p2.playT * 10) / 10,
+      zoomed: Math.round(p2.dist / p1.dist * 1000) / 1000, bar: Number(seekB.value) };
+    playB.click(); await settle(200);
+    const p3 = w.__view(); out.paused = !p3.playing && playB.textContent.indexOf("Play") >= 0;
+    seekB.value = 1000; seekB.dispatchEvent(new w.Event("input", { bubbles: true })); await settle(200);
+    out.playEndLid = w.__view().lidUp;                                          // the slider at its end: everything in place
+    for (let i = 0; i < 6; i++) d.getElementById("m-back").click();
+    await settle(600);
+    out.labelsStored = w.localStorage.getItem("noise-logger-3d-labels");        // "1": Labels were switched on above, and that is kept
   }
 
   const seen = (el) => { const r = el.getBoundingClientRect(), cs = w.getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none"; };
@@ -117,8 +151,19 @@ async function run() {
     out.tabs[tab] = measure();
   }
 
+  // ---- the Labels choice survives a reload (they were switched on above) ----
+  if (out.labelsStored === "1") {
+    await new Promise((r) => { f.addEventListener("load", r, { once: true }); f.contentWindow.location.reload(); });
+    const d2 = f.contentDocument, w2 = f.contentWindow;
+    for (let i = 0; i < 120 && d2.body.dataset.modelLoaded !== "yes"; i++) await wait(200);
+    out.labelsAfterReload = w2.__view ? w2.__view().labels : null;
+    out.labelsButtonAfterReload = d2.getElementById("b-labels").getAttribute("aria-pressed");
+    d2.getElementById("b-labels").click();                                      // off again, as a new visitor has it
+    out.labelsBackOff = w2.localStorage.getItem("noise-logger-3d-labels");
+  }
+
 }
 f.addEventListener("load", () => run().catch((e) => out.errors.push("selftest: " + e.message)).finally(() => {
   document.getElementById("selftest").textContent = JSON.stringify(out); document.title = "selftest done";
-  fetch("/selftest-result", { method: "POST", body: JSON.stringify(out) }).catch(() => {}); }));   // check_page.py is listening; opened by hand, read the text on the page
+  fetch("/selftest-result", { method: "POST", body: JSON.stringify(out) }).catch(() => {}); }), { once: true });   // check_page.py is listening; opened by hand, read the text on the page
 </script></body>

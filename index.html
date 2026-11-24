@@ -34,7 +34,8 @@ button,input,textarea{font:inherit}
 .wrap{max-width:980px;margin:0 auto;padding:14px}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
 .tabs button{flex:1;border:0;background:none;color:var(--soft);display:flex;flex-direction:column;align-items:center;gap:1px;min-height:56px;border-radius:12px;font-size:13px;cursor:pointer}
-.tabs button .ic{font-size:20px;line-height:1.1}
+/* the four tab icons are one family: plain outlines in the tab's own colour (Shad, 24 Nov 2026) */
+.tabic{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-selected="true"]{background:var(--pine-pale);color:var(--pine-deep);font-weight:700}
 @media (min-width:900px){
   .side{display:flex;flex-direction:column;gap:6px;position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--pine-deep);padding:22px 14px;z-index:20}
@@ -86,14 +87,14 @@ textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:1
 .step>header .t .badge{color:var(--pine-deep);background:#d9f0e3}.step>header .t .badge.untested{color:#6b4e06;background:var(--gold-pale)}
 .chev{transition:transform .2s;font-size:18px;padding-top:6px}.step.open .chev{transform:rotate(180deg)}
 .step .body{display:none;padding:14px 16px}.step.open .body{display:block}
-.still{position:relative;border-radius:12px;overflow:hidden;background:#eef1ee}
+.still{position:relative;border-radius:12px;overflow:hidden;background:#f7f2e8;border:1px solid var(--line)}
 .still img{display:block;width:100%;height:auto;max-height:300px;object-fit:cover}
 .still .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#1f6feb;color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .watch{display:flex;width:100%;justify-content:center;background:#1f6feb;color:#fff;border:0;border-radius:0 0 12px 12px;min-height:46px;font-weight:600;cursor:pointer}
 /* 3D tab: viewer + step panel (same element ids as the live guide's viewer) */
 /* 24 Nov 2026 (Round 2 of the 3D plan): a big frame that handles like the drone guide's. One finger on the model turns it,
    two fingers zoom; the page scrolls when touched outside the model. */
-#viewer{position:relative;height:clamp(300px,56vh,520px);border-radius:14px;overflow:hidden;background:#eef1ee;touch-action:none}
+#viewer{position:relative;height:clamp(300px,56vh,520px);border-radius:14px;overflow:hidden;background:#f7f2e8;border:1px solid var(--line);touch-action:none}
 #viewer canvas{display:block;width:100%;height:100%;touch-action:none}
 .vhint{margin:6px 2px 0}
 #vwrap:fullscreen{display:flex;flex-direction:column;background:#fffdf8;padding:12px;overflow:auto}
@@ -107,6 +108,13 @@ html.v-locked .tabs{display:none}
 .vlabel::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px} /* 44 px to tap */
 .vlabel .dot{position:absolute;left:50%;bottom:-9px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 2px #fff}
 .mlabel{position:absolute;transform:translate(-50%,-50%);background:#fff;color:var(--ember);border:1.5px solid var(--ember);font-size:13px;font-weight:700;padding:2px 7px;border-radius:999px;pointer-events:none;white-space:nowrap}
+.vtag{position:absolute;z-index:3;display:none;max-width:240px;padding:6px 9px;border-radius:8px;background:rgba(20,30,26,.9);color:#fff;font-size:13px;line-height:1.35;pointer-events:none}
+.vtag b{display:block}
+.vplay{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.vplay .btn{min-width:108px}
+.vplay input{flex:1 1 150px;min-width:120px;height:44px;margin:0;accent-color:var(--pine)}
+.vplay span{flex:1 1 100%}
+.btn:disabled{opacity:.45;cursor:default}
 .vbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .more{margin-top:8px}
 .mnav{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-top:8px;text-align:center}
@@ -127,11 +135,17 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path transform="rotate(45 12 12)" d="M10.5 2.6V6.8h3V2.6a4.2 4.2 0 0 1 .3 7.7v8.9a1.8 1.8 0 0 1-3.6 0v-8.9a4.2 4.2 0 0 1 .3-7.7z"/></symbol>
+  <symbol id="i-3d" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></symbol>
+  <symbol id="i-buy" viewBox="0 0 24 24"><path d="M3 4.5h2.6l2.2 10h10.1L20 7.5H6.3"/><circle cx="9.2" cy="18.6" r="1.4"/><circle cx="16.8" cy="18.6" r="1.4"/></symbol>
+</defs></svg>
 <nav class="side" role="tablist" aria-label="Guide sections">
-  <button role="tab" data-tab="home" aria-selected="true">⌂ Home</button>
-  <button role="tab" data-tab="build" aria-selected="false">🔧 Build</button>
-  <button role="tab" data-tab="model" aria-selected="false">🧊 3D</button>
-  <button role="tab" data-tab="buy" aria-selected="false">🛒 Buy</button>
+  <button role="tab" data-tab="home" aria-selected="true"><svg class="tabic" aria-hidden="true"><use href="#i-home"/></svg>Home</button>
+  <button role="tab" data-tab="build" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-build"/></svg>Build</button>
+  <button role="tab" data-tab="model" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-3d"/></svg>3D</button>
+  <button role="tab" data-tab="buy" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-buy"/></svg>Buy</button>
 </nav>
 <div class="app">
 <header class="top">
@@ -206,21 +220,24 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
       <div id="vwrap">
       <div id="viewer" aria-label="3D model of the noise logger"></div>
       <p class="small soft vhint" id="vhint">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan</p>
+      <div class="vplay"><button class="btn solid" id="b-play" type="button" aria-pressed="false" disabled>▶ Play</button>
+        <input type="range" id="v-seek" min="0" max="1000" value="1000" aria-label="Where this step's animation is" disabled>
+        <span class="small soft" id="v-playnote">Play shows this step. You can turn and zoom while it plays.</span></div>
       <div class="mnav"><button class="btn" id="m-back" type="button">‹ Back</button><span id="m-count" class="small"></span><button class="btn solid" id="m-next" type="button">Next ›</button></div>
       <div class="vbar">
         <button class="btn" id="b-assembled" aria-pressed="true">Assembled</button>
         <button class="btn" id="b-exploded" aria-pressed="false">Exploded</button>
         <button class="btn" id="b-xray" aria-pressed="false">See inside</button>
         <button class="btn" id="b-reset" type="button">Reset view</button>
+        <button class="btn" id="b-labels" aria-pressed="false">Labels</button>
         <button class="btn" id="b-full" type="button" aria-pressed="false">Full screen</button>
       </div>
       <details class="more"><summary>More views</summary><div class="vbar">
-        <button class="btn" id="b-labels" aria-pressed="true">Labels</button>
         <button class="btn" id="b-measure" aria-pressed="false">Show measurements</button>
         <button class="btn" id="b-power" aria-pressed="false">Power on (preview)</button>
         <button class="btn" id="b-spin" aria-pressed="false">Auto-spin</button></div></details>
       </div>
-      <p id="vcaption" class="small">You're looking at the whole device: the Raspberry Pi in its official case, and the microphone on a high shelf. The Pi is drawn from the official drawing; the case is simplified, and the mic, shelf and cables are drawn by eye. They are drawn close together: keep the real mic at least 1 m from the Pi. The mic is drawn leaning; point the real one up at the ceiling.</p>
+      <p id="vcaption" class="small">You're looking at the whole device: the Raspberry Pi in its official case, and the microphone on a high shelf. The Pi is drawn from the official drawing; the case is simplified, and the mic, shelf and cables are drawn by eye. They are drawn close together: keep the real mic at least 1 m from the Pi. The mic is drawn leaning; point the real one up at the ceiling. Point at a part with the mouse, or tap it, to see its name; the Labels button shows all the names.</p>
     </div>
     <aside class="steppanel">
       <div class="sp-head"><b>Step by step</b><span class="soft small" id="sp-count"></span></div>
@@ -267,10 +284,10 @@ table{border-collapse:collapse;width:100%;font-size:15px} td,th{border-bottom:1p
 </main>
 </div>
 <nav class="tabs" role="tablist" aria-label="Guide sections">
-  <button role="tab" data-tab="home" aria-selected="true"><span class="ic">⌂</span>Home</button>
-  <button role="tab" data-tab="build" aria-selected="false"><span class="ic">🔧</span>Build</button>
-  <button role="tab" data-tab="model" aria-selected="false"><span class="ic">🧊</span>3D</button>
-  <button role="tab" data-tab="buy" aria-selected="false"><span class="ic">🛒</span>Buy</button>
+  <button role="tab" data-tab="home" aria-selected="true"><svg class="tabic" aria-hidden="true"><use href="#i-home"/></svg>Home</button>
+  <button role="tab" data-tab="build" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-build"/></svg>Build</button>
+  <button role="tab" data-tab="model" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-3d"/></svg>3D</button>
+  <button role="tab" data-tab="buy" aria-selected="false"><svg class="tabic" aria-hidden="true"><use href="#i-buy"/></svg>Buy</button>
 </nav>
 <script type="application/json" id="buy-data">
 {"checkedOn": "2026-11-22", "gst": 0.05,"lines":[

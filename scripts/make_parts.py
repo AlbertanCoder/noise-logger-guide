@@ -1,8 +1,12 @@
-"""Builds the 3D model for the web page (GLB), and the older printable case (STL, kept but not used in the build), from ONE table of numbers.
+"""The ONE table of numbers for the guide's 3D model, and the older printable case (STL, kept but not used in the build).
 Board numbers: official Raspberry Pi 5 + Active Cooler mechanical drawings, measured from their lines (board corner = 0, 0).
 Numbers marked PROVISIONAL are not in any drawing: measure the real part before printing.
-Run:  python scripts/make_parts.py      (needs: trimesh, manifold3d, numpy)"""
+Since 24 Nov 2026 the web page's model (models/noise-logger.glb, models/colors.json) is built in Blender by
+scripts/build_model_blender.py, which reads the numbers below. This script makes the print files and models/numbers.json.
+Run:  python scripts/make_parts.py      (needs: trimesh, manifold3d, numpy)
+      python scripts/make_parts.py --old-model FOLDER   also writes the earlier plain-box web model into FOLDER (for comparing)"""
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -347,18 +351,8 @@ def umik_model(x, y):
     return [(k, colored(m, c, k)) for k, m, c in parts]
 
 
-def main():
-    OUT_PRINT.mkdir(exist_ok=True)
-    OUT_MODEL.mkdir(exist_ok=True)
-    base, lid, cradle = make_base(), make_lid(), make_cradle()
-    lid_placed = lid.copy()
-    lid_placed.apply_translation((0, 0, WALL_TOP))
-    report = {}
-    for name, m in [("case_base", base), ("case_lid", lid), ("mic_cradle", lie_on_back(cradle))]:   # each file lies the way it prints
-        m.export(OUT_PRINT / f"{name}.stl")
-        ext = m.bounds[1] - m.bounds[0]
-        report[name] = {"size_mm": [round(float(v), 2) for v in ext], "watertight": bool(m.is_watertight),
-                        "volume_cm3": round(float(m.volume) / 1000, 1)}
+def old_model(out):
+    out.mkdir(parents=True, exist_ok=True)
     scene = trimesh.Scene()
     def put(key, m):  # repeated detail parts get a #n suffix; the viewer groups by the name before '#' and '__'
         name = key
@@ -375,8 +369,24 @@ def main():
         put(key, m)
     for key, m in official_case() + umik_model(OCASE["w"] + 160, OCASE["d"] / 2 + 20):
         put(key, m)
-    scene.export(OUT_MODEL / "noise-logger.glb")
-    (OUT_MODEL / "colors.json").write_text(json.dumps(COLOR_MAP, indent=0))
+    scene.export(out / "noise-logger.glb")
+    (out / "colors.json").write_text(json.dumps(COLOR_MAP, indent=0))
+
+
+def main():
+    OUT_PRINT.mkdir(exist_ok=True)
+    OUT_MODEL.mkdir(exist_ok=True)
+    base, lid, cradle = make_base(), make_lid(), make_cradle()
+    lid_placed = lid.copy()
+    lid_placed.apply_translation((0, 0, WALL_TOP))
+    report = {}
+    for name, m in [("case_base", base), ("case_lid", lid), ("mic_cradle", lie_on_back(cradle))]:   # each file lies the way it prints
+        m.export(OUT_PRINT / f"{name}.stl")
+        ext = m.bounds[1] - m.bounds[0]
+        report[name] = {"size_mm": [round(float(v), 2) for v in ext], "watertight": bool(m.is_watertight),
+                        "volume_cm3": round(float(m.volume) / 1000, 1)}
+    if "--old-model" in sys.argv:                      # the earlier web model, made of plain boxes and tubes (kept for comparing)
+        old_model(Path(sys.argv[sys.argv.index("--old-model") + 1]))
     numbers = {"outer_mm": [round(OUT_W, 2), round(OUT_H, 2), round(WALL_TOP + LID_T, 2)],
                "inner_mm": [round(INNER_W, 2), round(INNER_H, 2)], "hole_spacing_mm": [58.0, 49.0],
                "board_corner_in_case_mm": [round(BX, 2), round(BY, 2)], "board_top_z_mm": round(Z_TOP, 2), "floor_mm": FLOOR,
