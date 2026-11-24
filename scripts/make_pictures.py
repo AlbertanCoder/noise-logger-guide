@@ -1,6 +1,7 @@
 """Takes the 12 step pictures (images/steps/step-N.jpg) from the 3D model with headless Chrome.
 Run after make_parts.py or after steps change order:  python scripts/make_pictures.py   (needs: pillow, Chrome)"""
 import functools
+import hashlib
 import http.server
 import json
 import re
@@ -27,7 +28,31 @@ def shot(url, out, size="660,420"):
                         "--no-first-run", f"--window-size={size}", "--virtual-time-budget=14000", f"--screenshot={out}", url], capture_output=True, timeout=120)
 
 
+def fingerprint(*names):
+    h = hashlib.sha256()
+    for n in names:
+        h.update((ROOT / n).read_bytes().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:8]
+
+
+# file -> (the text in it that carries a fingerprint, the files the fingerprint is of); each one builds on the one before
+STAMPS = [("js/viewer.js", r'(const MODEL_V = ")[0-9a-f]{8}(")', ("models/noise-logger.glb", "models/colors.json", "models/numbers.json")),
+          ("js/app2.js", r'(js/viewer\.js\?v=)[0-9a-f]{8}(")', ("js/viewer.js",)),
+          ("index.html", r'(js/app2\.js\?v=)[0-9a-f]{8}(")', ("js/app2.js",))]
+
+
+def stamp():
+    """Writes each file's fingerprint into the address it is loaded by, so a browser never shows a saved old copy after an update."""
+    for name, pattern, of in STAMPS:
+        text = (ROOT / name).read_text(encoding="utf-8")
+        new, n = re.subn(pattern, lambda m: m.group(1) + fingerprint(*of) + m.group(2), text)
+        assert n == 1, f"{name}: fingerprint place not found"
+        if new != text:
+            (ROOT / name).write_text(new, encoding="utf-8")
+
+
 def main():
+    stamp()
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(ROOT)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     steps = json.loads(re.search(r'id="steps-data">(.*?)</script>', (ROOT / "index.html").read_text(encoding="utf-8"), re.S).group(1))

@@ -83,6 +83,10 @@ ok('store.get("labels") === "1"' in viewer and 'store.set("labels"' in viewer an
 ok(all(w in viewer for w in ("from the official drawing", "simplified", "drawn by eye", "}, 5000)", "< 6) pick(", '"pointermove"', 'e.pointerType !== "mouse"')),
    "tapping a part shows its name and how exact its drawing is for 5 s; pointing at it with the mouse does too; a drag is not a tap")
 ok('id="b-play"' in html and 'id="v-seek"' in html and "Nothing moves in this step" in viewer and ".vtag{" in css, "a Play button and a slider under the 3D view, and a style for the tap name")
+sys.path.insert(0, str(ROOT / "scripts"))
+import make_pictures as pics  # noqa: E402
+stale_marks = [name for name, pattern, of in pics.STAMPS if (re.search(pattern, (ROOT / name).read_text(encoding="utf-8")) or [""])[0].find(pics.fingerprint(*of)) < 0]
+ok(not stale_marks, f"the model and scripts are loaded by addresses that carry their current fingerprint, so no phone shows a saved old copy ({stale_marks}; fix: python scripts/make_pictures.py)")
 ok("js/viewer.js" in app and "poster" not in html + viewer, "the 3D view loads live as soon as the page opens, on a phone too (no still picture first)")
 ok("touch-action: pan-x pan-y" in html and "gesturestart" in html and "user-scalable=no" in html, "the page itself never zooms (pinch or double-tap, iPhone included)")
 ok(html.count("</html>") == 1, "exactly one </html>")

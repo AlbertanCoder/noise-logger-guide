@@ -29,6 +29,7 @@ const VIEWS = { overview: [0.25, 0.8, 1.0], top: [0.001, 1, 0.02], front: [0.1, 
 const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under", null, ["case_base", "board"]],
   6: ["front", null, BOX_PARTS], 7: ["front", "power", ["case_base", "case_lid"]], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
 const DEFAULT_CAPTION = caption.textContent;
+const MODEL_V = "b77ff950";   // fingerprint of the model files, written by scripts/make_pictures.py: a changed model gets a new address, so no phone shows a saved old one
 // the hint line in the drone guide's words; a touch screen gets the touch words
 if (window.matchMedia && matchMedia("(pointer: coarse)").matches) $("vhint").textContent = "Drag to rotate · pinch to zoom · two-finger drag to pan";
 // remembered choices (private browsing has no storage: then the choice lasts until the page closes)
@@ -122,8 +123,8 @@ function resize() { const w = host.clientWidth, h = host.clientHeight; if (!w ||
 // a new size (a turned phone, Full screen) frames the view again, unless you have moved the camera yourself
 new ResizeObserver(() => { resize(); if (!tween && !userMoved) aimAt(currentView, false, currentAimNodes); }).observe(host); resize();
 
-Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logger.glb", res, undefined, rej)),
-  fetch("models/colors.json").then((r) => r.json()), fetch("models/numbers.json").then((r) => r.json())])
+Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logger.glb?v=" + MODEL_V, res, undefined, rej)),
+  fetch("models/colors.json?v=" + MODEL_V).then((r) => r.json()), fetch("models/numbers.json?v=" + MODEL_V).then((r) => r.json())])
   .then(([gltf, colors, numbers]) => {
     const s = gltf.scene; gltfScene = s; s.rotation.x = -Math.PI / 2; root.add(s);
     s.traverse((o) => {
