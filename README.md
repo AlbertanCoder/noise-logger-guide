@@ -15,11 +15,11 @@ A step-by-step guide to a small Raspberry Pi device that keeps an automatic, tim
 
 ## Checks (run before every release)
 ```
-python scripts/make_parts.py     # the one table of numbers: writes models/numbers.json and the older print files
+python scripts/make_parts.py     # the one table of numbers: writes models/numbers.json and the older print files (needs: pip install trimesh manifold3d numpy)
 blender -b --factory-startup -P scripts/build_model_blender.py   # builds models/noise-logger.glb and colors.json in Blender from those numbers
 python scripts/check_parts.py    # checks the older printable case in print/, which this build no longer uses
 python scripts/make_pictures.py  # retakes the 12 step pictures from the 3D model
-python scripts/check_page.py     # words and numbers first, then the real page in a browser at phone width: sizes, pictures, 3D, buttons
+python scripts/check_page.py     # words and numbers first, then the real page in a browser at phone width and at PC width: sizes, pictures, 3D, buttons, a slow connection
 ```
 
 ## Built with
