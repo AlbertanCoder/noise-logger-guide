@@ -248,6 +248,9 @@ for tab in ("home", "build", "buy", "model"):
     ok(bool(r) and not r["sideways"] and not r["small"] and not r["taps"],
        f"{tab} tab at 390 px: no sideways scroll, no text under 13 px, nothing to tap under 44 px" + ("" if r and not (r["sideways"] or r["small"] or r["taps"]) else f" | {r}"))
 ok(t.get("measurePressed") is True and t.get("seeInsideChange", 0) > 6, f"'See inside' really changes the picture (average change {t.get('seeInsideChange')}; under 1 means the case stayed solid)")
+pc = t.get("pc") or {}
+ok(len(t.get("measureMarks", [])) == 5, f"'Show measurements' at 390 px: all 5 numbers are whole inside the picture ({t.get('measureMarks')})")
+ok(pc.get("width", 0) >= 900 and len(pc.get("measureMarks", [])) == 5, f"'Show measurements' at PC width ({pc.get('width')} px): all 5 numbers are whole inside the picture ({pc.get('measureMarks')})")
 ok(len(t.get("explodedLabels", [])) == 5, f"Exploded view: all 5 labels are inside the picture, lid included ({t.get('explodedLabels')})")
 ok(str(t.get("step5Title", "")).startswith("5.") and t.get("step5SolidRed", 100) < 2, f"stepping to step 5 ghosts the case so the card shows ({t.get('step5SolidRed')}% of the picture is still solid red)")
 ok(t.get("viewerH", 0) >= 300 and t.get("touchAction") == "none" and not t.get("grabButton"), f"at 390 px the 3D view is {t.get('viewerH')} px tall, one finger turns it (touch-action {t.get('touchAction')!r}), no 'Move the model'")

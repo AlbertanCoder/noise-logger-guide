@@ -7,6 +7,10 @@
    It starts on the 3D tab: a hidden browser only sizes the 3D view when the page opens with it on screen. */
 const f = document.getElementById("f"), out = { errors: [], tabs: {} };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/** the measuring numbers that sit whole inside the 3D picture */
+const marksInside = (doc) => { const box = doc.getElementById("viewer").getBoundingClientRect();
+  return [...doc.querySelectorAll(".mlabel")].filter((e) => { const r = e.getBoundingClientRect();
+    return e.style.display !== "none" && r.width > 0 && r.left >= box.left && r.right <= box.right && r.top >= box.top && r.bottom <= box.bottom; }).map((e) => e.textContent); };
 
 async function run() {
   const d = f.contentDocument, w = f.contentWindow;
@@ -35,6 +39,7 @@ async function run() {
     out.pictureRange = hi - lo;                                   // a blank view has no range
     press("b-measure"); await settle(1800); const through = shot(); // from above, case see-through, measuring lines on the board
     out.measurePressed = d.getElementById("b-xray").getAttribute("aria-pressed") === "true";
+    out.measureMarks = marksInside(d);                              // every number tag whole inside the picture (audit of 24 Nov 2026, finding 1)
     press("b-xray"); await settle(700); const solid = shot();       // same view, case solid again
     out.seeInsideChange = Math.round(differ(through, solid) * 10) / 10;
     out.labelsAtStart = w.__view().labels;                          // labels stay hidden until asked for (Shad, 24 Nov 2026)
@@ -161,6 +166,17 @@ async function run() {
     d2.getElementById("b-labels").click();                                      // off again, as a new visitor has it
     out.labelsBackOff = w2.localStorage.getItem("noise-logger-3d-labels");
   }
+
+  // ---- the same page at PC width (the audit of 24 Nov 2026 found faults that only show on a wide screen) ----
+  f.style.width = "1280px";
+  const dp = f.contentDocument, wp = f.contentWindow;
+  const settleP = async (ms) => { await wait(ms); for (let i = 0; i < 6; i++) await new Promise((r) => wp.requestAnimationFrame(r)); };
+  for (let i = 0; i < 120 && dp.body.dataset.modelLoaded !== "yes"; i++) await wait(200);
+  dp.querySelector('.side [data-tab="model"]').click(); await settleP(900);
+  out.pc = { width: wp.innerWidth, viewerH: Math.round(dp.getElementById("viewer").getBoundingClientRect().height) };
+  dp.getElementById("b-measure").click(); await settleP(1800);
+  out.pc.measureMarks = marksInside(dp);
+  dp.getElementById("b-measure").click(); await settleP(300);
 
 }
 f.addEventListener("load", () => run().catch((e) => out.errors.push("selftest: " + e.message)).finally(() => {

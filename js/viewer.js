@@ -190,7 +190,7 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
     if (new URLSearchParams(location.search).get("view") === "top") { // proof view: the bare board from above, like the official drawing
       topView = true; labelsOn = false;
       Object.keys(groups).forEach((k) => { if (!PI.includes(k) || k === "heatsink" || k === "fan") groups[k].forEach((o) => (o.visible = false)); });
-      aimAt("top", false, ["board"]);
+      aimAt("top", false, PI.filter((k) => k !== "heatsink" && k !== "fan"));   // the board with its sockets (they stick out past its edge)
     } else {
       const q = new URLSearchParams(location.search), st = parseInt(q.get("step") || "0", 10);
       const cam = (q.get("cam") || "").split(",").map(Number);    // proof pictures: ?cam=x,y,z looks at the whole model from that side
@@ -235,6 +235,12 @@ function cornersOf(nodes) {
     const far = reach.get(mover); if (far) { one.min.add(far.min); one.max.add(far.max); }
     for (let i = 0; i < 8; i++) pts.push(new THREE.Vector3(i & 1 ? one.max.x : one.min.x, i & 2 ? one.max.y : one.min.y, i & 4 ? one.max.z : one.min.z));
   }));
+  // the measuring lines run outside the board and the case: while they are shown they belong in the picture too
+  // (audit of 24 Nov 2026, finding 1: the tight frame had pushed three of the five numbers out of it)
+  if (measure && measureGroup) measureGroup.children.forEach((line) => {
+    const p = line.geometry.attributes.position;
+    for (let i = 0; i < 2; i++) pts.push(line.localToWorld(new THREE.Vector3().fromBufferAttribute(p, i)));
+  });
   return pts;
 }
 // the camera fit is the drone guide's (docs/js/viewer3d.js, collectCorners + fitCamera): framed tight, not by a loose ball
@@ -260,7 +266,7 @@ function aimAt(view, animate = true, nodes = null) {
   const pts = cornersOf(nodes), box = new THREE.Box3().setFromPoints(pts);
   const centre = pts.length ? box.getCenter(new THREE.Vector3()) : fitSphere.center.clone();
   const dir = new THREE.Vector3(...(VIEWS[view] || VIEWS.overview)).normalize();
-  const dist = pts.length ? fitDistance(pts, centre, dir) : fitSphere.radius * 3;
+  const dist = pts.length ? fitDistance(pts, centre, dir, measure ? 0.8 : 0.88) : fitSphere.radius * 3;   // measuring: room for the number tags at the ends of the lines
   const toPos = centre.clone().addScaledVector(dir, dist), toTarget = centre.clone(), below = dir.y < 0;
   if (!animate) { tween = null; setLimits(dist, below); camera.position.copy(toPos); controls.target.copy(toTarget); controls.update(); return; }
   // while the camera glides to the new view the limits are wide open, so it never jumps; they close when it arrives
