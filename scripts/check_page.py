@@ -276,6 +276,13 @@ ok(abs(t.get("overviewMaxPolar", 0) - 1.555) < 0.01 and abs(t.get("step5MaxPolar
 ok(t.get("resetBack", 99) < 1.5 and abs(t.get("resetDist", 0) - 1) < 0.01, f"Reset view puts the camera back where the step had it (picture difference {t.get('resetBack')}, distance {t.get('resetDist')})")
 ok(t.get("fullOpen") is True and t.get("fullH", 0) > t.get("viewerH", 0) and t.get("fullLabel") == "Close full screen" and t.get("fullClosed") is True,
    f"Full screen opens ({t.get('fullH')} px tall) and Esc closes it")
+fc = t.get("fullClose") or {}
+fo = fc.get("opened") or {}
+ok(fc.get("atTop") is True and fc.get("play") is True and fc.get("next") is True and fc.get("folded") is True and fc.get("scrollsDown") is False and fc.get("shareOfScreen", 0) >= 65
+   and t.get("fullClosedByTopButton") is True,
+   f"Full screen at 390 px: a Close button at the top, Play and Back / Next on screen, the view buttons folded under 'Views'; the model has {fc.get('shareOfScreen')}% of the height; the top button closes it")
+ok(fo.get("assembled") is True and fo.get("reset") is True and fo.get("more") is True and fo.get("scrollsDown") is False and fo.get("shareOfScreen", 0) >= 45 and t.get("viewsBackAfterFull") is True,
+   f"Full screen at 390 px: a tap on 'Views' shows every view button without scrolling (the model keeps {fo.get('shareOfScreen')}% of the height); outside Full screen the buttons are simply there")
 ok(t.get("hint", "").startswith("Drag to rotate"), f"the hint line shows under the 3D view ({t.get('hint')!r})")
 ok(t.get("tone") == 1.05 and t.get("poster") is False, f"the page draws with the drone guide's tone setting ({t.get('tone')}) and shows the live 3D with no still picture first")
 ok(t.get("micGlow") == "c2571b" and t.get("micGlowPower", 0) > 0.5 and t.get("shelfOpacity") == 0.62, f"step 3: the mic glows orange ({t.get('micGlow')}) and the shelf dims to 62% ({t.get('shelfOpacity')})")

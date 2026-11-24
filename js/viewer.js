@@ -406,14 +406,20 @@ $("b-reset").onclick = resetView;
 // (iPhone Safari), or when it fails, the 3D view fills the screen as an overlay with a Close button. Esc closes both.
 const vwrap = $("vwrap");
 function isFull() { return document.fullscreenElement === vwrap || vwrap.classList.contains("v-overlay"); }
-function setFullLabel() { $("b-full").textContent = isFull() ? "Close full screen" : "Full screen"; press("b-full", isFull()); }
+function setFullLabel() {
+  $("b-full").textContent = isFull() ? "Close full screen" : "Full screen"; press("b-full", isFull());
+  // Full screen on a phone: the view buttons fold shut under their "Views" heading, so the model gets the screen; a tap opens them.
+  // Everywhere else they are simply there (audit of 24 Nov 2026, finding 6).
+  $("views").open = !(isFull() && window.matchMedia("(max-width: 899px)").matches);
+}
 function closeOverlay() { vwrap.classList.remove("v-overlay"); document.documentElement.classList.remove("v-locked"); setFullLabel(); }
 function openOverlay() { vwrap.classList.add("v-overlay"); document.documentElement.classList.add("v-locked"); setFullLabel(); }
+function leaveFull() { if (vwrap.classList.contains("v-overlay")) closeOverlay(); else if (document.fullscreenElement) document.exitFullscreen(); }
 $("b-full").onclick = () => {
-  if (vwrap.classList.contains("v-overlay")) { closeOverlay(); return; }
-  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  if (vwrap.classList.contains("v-overlay") || document.fullscreenElement) { leaveFull(); return; }
   if (typeof vwrap.requestFullscreen === "function") vwrap.requestFullscreen().catch(openOverlay); else openOverlay();
 };
+$("b-fullclose").onclick = leaveFull;                     // the Close button at the top of the full-screen view (a phone has no Esc key)
 document.addEventListener("fullscreenchange", setFullLabel);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && vwrap.classList.contains("v-overlay")) closeOverlay(); });
 

@@ -87,10 +87,22 @@ async function run() {
     out.fullOpen = wrap.classList.contains("v-overlay") || d.fullscreenElement === wrap;
     out.fullH = Math.round(vw.getBoundingClientRect().height);
     out.fullLabel = d.getElementById("b-full").textContent;
+    // a Close button at the top, and everything needed on screen without scrolling (audit of 24 Nov 2026, finding 6)
+    const onScreenOrBelow = (id) => { const r = d.getElementById(id).getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    const onScreen = (id) => { const r = d.getElementById(id).getBoundingClientRect(); return r.width > 0 && r.top >= 0 && r.bottom <= w.innerHeight && r.left >= 0 && r.right <= w.innerWidth; };
+    out.fullClose = { atTop: onScreen("b-fullclose") && d.getElementById("b-fullclose").getBoundingClientRect().top < 120, play: onScreen("b-play"), next: onScreen("m-next"), folded: d.getElementById("views").open === false,
+      scrollsDown: wrap.scrollHeight > wrap.clientHeight + 1, shareOfScreen: Math.round(100 * vw.getBoundingClientRect().height / w.innerHeight) };
+    d.querySelector("#views > summary").click(); await settle(300);                // a tap on "Views" brings the view buttons back
+    out.fullClose.opened = { assembled: onScreen("b-assembled"), reset: onScreen("b-reset"), more: (() => { const r = d.querySelector("#views .more summary").getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= w.innerHeight; })(),
+      scrollsDown: wrap.scrollHeight > wrap.clientHeight + 1, shareOfScreen: Math.round(100 * vw.getBoundingClientRect().height / w.innerHeight) };
     d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     if (d.fullscreenElement) await d.exitFullscreen();
     await settle(500);
     out.fullClosed = !wrap.classList.contains("v-overlay") && !d.fullscreenElement && d.getElementById("b-full").textContent === "Full screen";
+    press("b-full"); await settle(600); d.getElementById("b-fullclose").click(); await settle(400);
+    if (d.fullscreenElement) await d.exitFullscreen();
+    out.fullClosedByTopButton = !wrap.classList.contains("v-overlay") && !d.fullscreenElement && d.getElementById("b-full").textContent === "Full screen";
+    out.viewsBackAfterFull = d.getElementById("views").open === true && onScreenOrBelow("b-assembled");
 
     // ---- Rounds 3 and 4 (24 Nov 2026): the drone guide's look, orange highlight, tap to name, Play per step ----
     out.tone = w.__view().tone;                                                 // 1.05 = the drone guide's tone setting
