@@ -119,7 +119,22 @@ async function run() {
     const p3 = w.__view(); out.paused = !p3.playing && playB.textContent.indexOf("Play") >= 0;
     seekB.value = 1000; seekB.dispatchEvent(new w.Event("input", { bubbles: true })); await settle(200);
     out.playEndLid = w.__view().lidUp;                                          // the slider at its end: everything in place
-    for (let i = 0; i < 6; i++) d.getElementById("m-back").click();
+
+    // ---- step 11: Play must show something (audit of 24 Nov 2026, finding 4: with the case shut, nothing changed) ----
+    for (let i = 0; i < 5; i++) next.click();
+    await settle(1500);
+    const until = async (cond, ms = 15000) => { const t0 = performance.now(); while (!cond() && performance.now() - t0 < ms) await settle(60); };
+    const moved = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 24) n++; return n; };   // of 9216 points
+    const drawn = async (n) => { for (let i = 0; i < n; i++) await new Promise((r) => w.requestAnimationFrame(r)); };
+    // four pictures 2, 3 and 4 drawn frames apart (a fan with 7 blades can look the same after some turns, so one pair is not enough)
+    const fanMoves = async () => { const a = w.__view().fanTurn, s = [shot()]; for (const n of [2, 3, 4]) { await drawn(n); s.push(shot()); } const b = w.__view();
+      return { turned: Math.abs(b.fanTurn - a) > 0.2, points: Math.max(moved(s[0], s[1]), moved(s[1], s[2]), moved(s[2], s[3]), moved(s[0], s[3])), lit: b.lit, at: Math.round(b.playT * 10) / 10 }; };
+    out.step11 = { title: d.getElementById("sp-title").textContent, seeInside: w.__view().seeInside };
+    playB.click(); await until(() => w.__view().playT >= 1.4);                  // from 1.2 s to 3.4 s it is switched off
+    out.step11.off = await fanMoves();
+    await until(() => w.__view().playT >= 3.7 || !w.__view().playing);          // then it starts again
+    out.step11.onAgain = await fanMoves();
+    for (let i = 0; i < 11; i++) d.getElementById("m-back").click();
     await settle(600);
     out.labelsStored = w.localStorage.getItem("noise-logger-3d-labels");        // "1": Labels were switched on above, and that is kept
   }

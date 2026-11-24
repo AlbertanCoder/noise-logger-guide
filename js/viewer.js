@@ -27,7 +27,8 @@ const ACC = { official: "from the official drawing", simplified: "simplified", e
 const VIEWS = { overview: [0.25, 0.8, 1.0], top: [0.001, 1, 0.02], front: [0.1, 0.45, 1.0], under: [-0.6, -0.35, 0.8], mic: [0.6, 0.35, 1.0] };
 // view, extra, and (optional) the parts the camera frames
 const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under", null, ["case_base", "board"]],
-  6: ["front", null, BOX_PARTS], 7: ["front", "power", ["case_base", "case_lid"]], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
+  6: ["front", null, BOX_PARTS], 7: ["front", "power", ["case_base", "case_lid"]], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"],
+  11: ["overview", "power", ["case_base", "case_lid"]] };   // steps 7 and 11: a close look at the box while it runs
 const DEFAULT_CAPTION = caption.textContent;
 const MODEL_V = "b77ff950";   // fingerprint of the model files, written by scripts/make_pictures.py: a changed model gets a new address, so no phone shows a saved old one
 // the hint line in the drone guide's words; a touch screen gets the touch words
@@ -486,8 +487,12 @@ function renderStep(i, animate = true) {
   setExploded(!!(focus && focus.some((k) => PI.includes(k)) && view !== "front"), animate);
   power = extra === "power"; press("b-power", power);
   measure = extra === "measure"; press("b-measure", measure); if (measureGroup) measureGroup.visible = measure;
-  xray = measure || view === "under"; press("b-xray", xray);
-  caption.textContent = focus ? "Step " + s.n + ": " + s.title + " — the glowing parts are the ones this step uses." : DEFAULT_CAPTION;
+  // a close look at the box while it runs (steps 7 and 11): the case is drawn see-through, so the lights and the fan show.
+  // (Audit of 24 Nov 2026, finding 4: with the case shut, Play in step 11 changed nothing you could see.)
+  const seeIn = extra === "power" && !!frame, seeInWords = "the case is drawn see-through so you can watch the lights and the fan";
+  xray = measure || view === "under" || seeIn; press("b-xray", xray);
+  caption.textContent = focus ? "Step " + s.n + ": " + s.title + " — the glowing parts are the ones this step uses." + (seeIn ? " Here " + seeInWords + "." : "")
+    : seeIn ? "Step " + s.n + ": " + s.title + " — " + seeInWords + "." : DEFAULT_CAPTION;
   const aim = frame ? frame : view === "mic" ? (s.n === 9 ? ["mic", "shelf", "cable", "case_base"] : ["mic"]) : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
   if (extra === "measure") focus = ["board"];
   paint();
@@ -555,6 +560,7 @@ window.__view = () => {
   return { dist: camera.position.distanceTo(controls.target), min: controls.minDistance, max: controls.maxDistance,
     polar: controls.getPolarAngle(), maxPolar: controls.maxPolarAngle, moved: userMoved, damping: controls.enableDamping, tweening: !!tween,
     playT: anim.t, playDur: anim.def ? anim.def.dur : 0, playing: anim.playing, lidUp: lid ? lid.position.z - home.get(lid).z : null,
+    lit: !!powerNow(), fanTurn: fanPivot ? fanPivot.rotation.z : 0, seeInside: xray,
     micGlow: mic ? mic.material.emissive.getHexString() : "", micGlowPower: mic ? mic.material.emissiveIntensity : 0, shelfOpacity: shelf ? shelf.material.opacity : null,
     tag: tag.style.display === "block" ? tag.textContent : "", labels: labelsOn, tone: renderer.toneMapping === THREE.ACESFilmicToneMapping ? renderer.toneMappingExposure : 0 };
 };

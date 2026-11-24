@@ -284,6 +284,11 @@ ok(pl.get("going") is True and pl.get("lidUp", 0) > 40 and pl.get("t2", 0) > pl.
    f"Play animates the step: the lid is {pl.get('lidUp')} mm up at {pl.get('t1')} s and it keeps going ({pl.get('t2')} s)")
 ok(pl.get("going") is True and pl.get("zoomed", 1) < 0.99, f"you can zoom while it plays (distance x{pl.get('zoomed')})")
 ok(t.get("paused") is True and t.get("playEndLid") == 0, f"Pause stops it, and the slider's end puts every part in place (lid {t.get('playEndLid')} mm up)")
+s11, off, again = t.get("step11") or {}, (t.get("step11") or {}).get("off") or {}, (t.get("step11") or {}).get("onAgain") or {}
+ok(str(s11.get("title", "")).startswith("11.") and s11.get("seeInside") is True and off.get("lit") is False and off.get("turned") is False and off.get("points", 99) <= 2
+   and again.get("lit") is True and again.get("turned") is True and again.get("points", 0) >= 8,
+   f"step 11: Play shows the box switching off and starting again (case see-through; while off, at {off.get('at')} s, {off.get('points')} of 9216 picture points move; "
+   f"running again, at {again.get('at')} s, {again.get('points')} move)")
 ok(t.get("labelsAtStart") is False and t.get("labelsShownAtStart") == 0, f"no labels on the model until they are asked for ({t.get('labelsShownAtStart')} shown at first)")
 ok("drawn by eye" in t.get("pointTag", "") and t.get("pointGone") is True, f"the mouse resting on the mic says {t.get('pointTag')!r}, and the name goes when it moves off")
 ok(t.get("labelsStored") == "1" and t.get("labelsAfterReload") is True and t.get("labelsButtonAfterReload") == "true" and t.get("labelsBackOff") == "0",
