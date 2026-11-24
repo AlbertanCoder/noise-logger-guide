@@ -541,6 +541,9 @@ function placeLabels() {
 }
 
 renderer.setAnimationLoop((now) => {
+  // nothing is worked out or drawn while the 3D view is not on screen (Home, Build or Buy is open): that spares a phone's battery
+  // (audit of 24 Nov 2026, finding 5: the whole scene was drawn every frame behind the other tabs)
+  if (!host.clientWidth || !host.clientHeight) return;
   if (tween) tween(now);
   if (explodeTween) explodeTween(now);
   if (anim.playing) {   // the parts keep moving while you turn and zoom: the camera is yours

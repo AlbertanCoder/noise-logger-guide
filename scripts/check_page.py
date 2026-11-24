@@ -284,6 +284,9 @@ ok(pl.get("going") is True and pl.get("lidUp", 0) > 40 and pl.get("t2", 0) > pl.
    f"Play animates the step: the lid is {pl.get('lidUp')} mm up at {pl.get('t1')} s and it keeps going ({pl.get('t2')} s)")
 ok(pl.get("going") is True and pl.get("zoomed", 1) < 0.99, f"you can zoom while it plays (distance x{pl.get('zoomed')})")
 ok(t.get("paused") is True and t.get("playEndLid") == 0, f"Pause stops it, and the slider's end puts every part in place (lid {t.get('playEndLid')} mm up)")
+dr = t.get("drawing") or {}
+ok(dr.get("on3D", 0) > 20 and dr.get("onHome", 1) == 0 and dr.get("backOn3D", 0) > 20,
+   f"the 3D is drawn only while its tab is open ({dr.get('on3D')} drawing calls in a moment on the 3D tab, {dr.get('onHome')} on Home, {dr.get('backOn3D')} back on 3D)")
 s2 = t.get("step2") or {}
 ok(str(s2.get("title", "")).startswith("2.") and s2.get("atRest", 0) > 70 and s2.get("sliderStart") == 0 and s2.get("sliderEnd", 0) > 70 and s2.get("openPressed") is True,
    f"step 2: the slider's start shuts the case and its end opens it, as playing does (lid {s2.get('atRest')} mm up at rest, {s2.get('sliderStart')} at the start, {s2.get('sliderEnd')} at the end)")

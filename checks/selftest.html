@@ -163,6 +163,19 @@ async function run() {
     });
     return { sideways: d.documentElement.scrollWidth > w.innerWidth, small: [...small], taps };
   }
+  // ---- the 3D is drawn only while its tab is open (audit of 24 Nov 2026, finding 5: it was drawn behind Home, Build and Buy too) ----
+  const GL = w.WebGL2RenderingContext && w.WebGL2RenderingContext.prototype;
+  if (GL && out.model === "yes") {
+    const o1 = GL.drawElements, o2 = GL.drawArrays; let calls = 0;
+    GL.drawElements = function (...a) { calls++; return o1.apply(this, a); }; GL.drawArrays = function (...a) { calls++; return o2.apply(this, a); };
+    const count = async () => { calls = 0; await wait(700); for (let i = 0; i < 6; i++) await new Promise((r) => w.requestAnimationFrame(r)); return calls; };
+    d.querySelector('.tabs [data-tab="model"]').click(); await wait(300); const shown = await count();
+    d.querySelector('.tabs [data-tab="home"]').click(); await wait(300); const hidden = await count();
+    d.querySelector('.tabs [data-tab="model"]').click(); await wait(300); const shownAgain = await count();
+    GL.drawElements = o1; GL.drawArrays = o2;
+    out.drawing = { on3D: shown, onHome: hidden, backOn3D: shownAgain };
+  }
+
   for (const tab of ["home", "build", "buy", "model"]) {
     const b = d.querySelector('.tabs [data-tab="' + tab + '"]'); if (!b) { out.errors.push("no tab " + tab); continue; }
     b.click();
