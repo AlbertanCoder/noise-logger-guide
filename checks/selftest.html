@@ -48,6 +48,41 @@ async function run() {
     for (let i = 0; i < ghosted.length; i += 4) if (ghosted[i] > 140 && ghosted[i + 1] < 90 && ghosted[i + 2] < 120) red++;   // solid case-red
     out.step5Title = d.getElementById("sp-title").textContent;
     out.step5SolidRed = Math.round(1000 * red / (ghosted.length / 4)) / 10;   // % of the picture still solid red: the base must be ghosted here
+    out.step5MaxPolar = Math.round(w.__view().maxPolar * 1000) / 1000;      // step 5 looks from below, so it may go under the floor
+
+    // ---- Round 2 (24 Nov 2026): handles like the drone guide ----
+    const vw = d.getElementById("viewer"), r0 = canvas.getBoundingClientRect();
+    out.viewerH = Math.round(vw.getBoundingClientRect().height);
+    out.touchAction = w.getComputedStyle(canvas).touchAction;
+    out.hint = (d.getElementById("vhint") || {}).textContent || "";
+    out.grabButton = !!d.getElementById("b-grab");
+    for (let i = 0; i < 6; i++) d.getElementById("m-back").click();             // back to the overview
+    await settle(1500);
+    const v0 = w.__view(), still = shot();
+    out.overviewMaxPolar = Math.round(v0.maxPolar * 1000) / 1000;
+    out.damping = v0.damping;
+    const wheel = (dy) => canvas.dispatchEvent(new w.WheelEvent("wheel", { deltaY: dy, clientX: r0.left + r0.width / 2, clientY: r0.top + r0.height / 2, bubbles: true, cancelable: true }));
+    out.wheelKeptFromPage = !wheel(-300);                                     // false from dispatchEvent = the page did not scroll
+    await settle(300);
+    out.wheelZoomChange = Math.round(differ(still, shot()) * 10) / 10;
+    out.wheelMoved = w.__view().moved;
+    for (let i = 0; i < 40; i++) wheel(-600); await settle(200);
+    const vin = w.__view(); out.zoomInStop = Math.round(vin.dist / vin.min * 1000) / 1000;     // 1 = stopped at the near limit
+    for (let i = 0; i < 60; i++) wheel(600); await settle(200);
+    const vout = w.__view(); out.zoomOutStop = Math.round(vout.dist / vout.max * 1000) / 1000; // 1 = stopped at the far limit
+    out.limitsRatio = Math.round(vout.max / vout.min * 100) / 100;                             // 3.2 / 0.25 = 12.8
+    press("b-reset"); await settle(1600);
+    out.resetBack = Math.round(differ(still, shot()) * 10) / 10;                // close to 0: the same picture as before the wheel
+    out.resetDist = Math.round(w.__view().dist / v0.dist * 1000) / 1000;
+    press("b-full"); await settle(800);
+    const wrap = d.getElementById("vwrap");
+    out.fullOpen = wrap.classList.contains("v-overlay") || d.fullscreenElement === wrap;
+    out.fullH = Math.round(vw.getBoundingClientRect().height);
+    out.fullLabel = d.getElementById("b-full").textContent;
+    d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    if (d.fullscreenElement) await d.exitFullscreen();
+    await settle(500);
+    out.fullClosed = !wrap.classList.contains("v-overlay") && !d.fullscreenElement && d.getElementById("b-full").textContent === "Full screen";
   }
 
   const seen = (el) => { const r = el.getBoundingClientRect(), cs = w.getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none"; };

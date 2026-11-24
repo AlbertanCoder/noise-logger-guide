@@ -37,9 +37,17 @@ nav = re.search(r"\.tabs button\{[^}]*min-height:(\d+)px", css)
 ok(nav and int(nav.group(1)) >= 44, f"bottom tabs at least 44 px tall (found {nav.group(1) if nav else None})")
 lab = re.search(r"\.vlabel\{[^}]*font-size:(\d+)px", css)
 ok(lab and int(lab.group(1)) >= 13, f"3D labels at least 13 px (found {lab.group(1) if lab else None})")
-none_rules = re.findall(r"([^{}]+)\{[^}]*touch-action:none", css)
-ok(all("grabbed" in r for r in none_rules), f"touch-action:none only after 'Move the model' is pressed ({[r.strip() for r in none_rules]})")
-ok("ONE: grabbed ? THREE.TOUCH.ROTATE : null" in viewer and "stopPropagation" in viewer, "one finger and the mouse wheel scroll the page until 'Move the model'")
+# Round 2 of the 3D plan (24 Nov 2026): the 3D view handles like the drone guide's
+none_rules = [r.strip() for r in re.findall(r"([^{}]+)\{[^}]*touch-action:none", re.sub(r"/\*.*?\*/", "", css, flags=re.S))]
+ok(none_rules and all(r.startswith("#viewer") for r in none_rules), f"touch-action:none on the 3D view only, so the page scrolls outside it ({none_rules})")
+ok("ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN" in viewer and "stopPropagation" not in viewer, "one finger turns, two fingers zoom, and the wheel zooms (no wheel blocker)")
+ok("b-grab" not in html + viewer and "grabbed" not in html + viewer and "Move the model" not in html + viewer, "'Move the model' is gone")
+ok("enableDamping = false" in viewer, "no glide: the model stops dead when you let go")
+ok("dist * 0.25" in viewer and "dist * 3.2" in viewer and "Math.PI * 0.495" in viewer, "zoom limits 0.25x to 3.2x the fitted distance, and a floor, as on the drone guide")
+ok('id="b-reset"' in html and ">Reset view<" in html and 'id="b-full"' in html and ">Full screen<" in html, "Reset view and Full screen buttons")
+ok(">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan<" in html and "pinch to zoom" in viewer, "the hint line in the drone guide's words, with the touch wording on touch screens")
+vh = re.search(r"@media \(min-width:900px\)\{#viewer\{height:min\((\d+)px", css)
+ok(vh and int(vh.group(1)) >= 560 and "grid-template-columns:1fr 320px" not in css, f"a big 3D frame on a laptop (about 585 px) with the step panel under it ({vh.group(1) if vh else None} px)")
 ok("touch-action: pan-x pan-y" in html and "gesturestart" in html and "user-scalable=no" in html, "the page itself never zooms (pinch or double-tap, iPhone included)")
 ok(html.count("</html>") == 1, "exactly one </html>")
 ok('aria-pressed' in html and 'Auto-spin' in html and 'id="ring"' in html and 'id="dc-mic"' in html, "pressed states, 'Auto-spin', progress ring and mic-test card present")
@@ -198,6 +206,16 @@ for tab in ("home", "build", "buy", "model"):
 ok(t.get("measurePressed") is True and t.get("seeInsideChange", 0) > 6, f"'See inside' really changes the picture (average change {t.get('seeInsideChange')}; under 1 means the case stayed solid)")
 ok(len(t.get("explodedLabels", [])) == 5, f"Exploded view: all 5 labels are inside the picture, lid included ({t.get('explodedLabels')})")
 ok(str(t.get("step5Title", "")).startswith("5.") and t.get("step5SolidRed", 100) < 2, f"stepping to step 5 ghosts the case so the card shows ({t.get('step5SolidRed')}% of the picture is still solid red)")
+ok(t.get("viewerH", 0) >= 300 and t.get("touchAction") == "none" and not t.get("grabButton"), f"at 390 px the 3D view is {t.get('viewerH')} px tall, one finger turns it (touch-action {t.get('touchAction')!r}), no 'Move the model'")
+ok(t.get("wheelKeptFromPage") is True and t.get("wheelZoomChange", 0) > 2 and t.get("wheelMoved") is True, f"the wheel zooms the model instead of scrolling the page (picture change {t.get('wheelZoomChange')})")
+ok(abs(t.get("zoomInStop", 0) - 1) < 0.02 and abs(t.get("zoomOutStop", 0) - 1) < 0.02 and abs(t.get("limitsRatio", 0) - 12.8) < 0.1,
+   f"zooming stops at both limits (near {t.get('zoomInStop')}, far {t.get('zoomOutStop')}, far/near {t.get('limitsRatio')})")
+ok(abs(t.get("overviewMaxPolar", 0) - 1.555) < 0.01 and abs(t.get("step5MaxPolar", 0) - 3.047) < 0.01 and t.get("damping") is False,
+   f"the camera never goes under the floor, except in step 5's view from below (floor {t.get('overviewMaxPolar')}, step 5 {t.get('step5MaxPolar')}); no glide")
+ok(t.get("resetBack", 99) < 1.5 and abs(t.get("resetDist", 0) - 1) < 0.01, f"Reset view puts the camera back where the step had it (picture difference {t.get('resetBack')}, distance {t.get('resetDist')})")
+ok(t.get("fullOpen") is True and t.get("fullH", 0) > t.get("viewerH", 0) and t.get("fullLabel") == "Close full screen" and t.get("fullClosed") is True,
+   f"Full screen opens ({t.get('fullH')} px tall) and Esc closes it")
+ok(t.get("hint", "").startswith("Drag to rotate"), f"the hint line shows under the 3D view ({t.get('hint')!r})")
 ok(not t.get("errors"), f"no script errors while the page was used ({t.get('errors')})")
 links = t.get("links", [])
 same_tab = [l["href"] for l in links if not l["newTab"]]

@@ -1,4 +1,5 @@
-// 3D viewer + step panel. The page scrolls normally until "Move the model" is pressed (UI fix 2).
+// 3D viewer + step panel. Since 24 Nov 2026 it handles like the drone guide's 3D view: the wheel zooms, one finger turns,
+// two fingers zoom, the model stops dead when you let go, Reset view and Full screen (Round 2 of the 3D plan).
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -21,6 +22,8 @@ const VIEWS = { overview: [0.25, 0.8, 1.0], top: [0.001, 1, 0.02], front: [0.1, 
 const STEP_VIEW = { 0: ["overview"], 1: ["overview"], 2: ["overview"], 3: ["mic"], 4: ["mic"], 5: ["under", null, ["case_base", "board"]],
   6: ["front", "assemble"], 7: ["front", "power", ["case_base", "case_lid"]], 8: ["overview", "power"], 9: ["mic"], 10: ["mic"], 11: ["overview", "power"] };
 const DEFAULT_CAPTION = caption.textContent;
+// the hint line in the drone guide's words; a touch screen gets the touch words
+if (window.matchMedia && matchMedia("(pointer: coarse)").matches) $("vhint").textContent = "Drag to rotate · pinch to zoom · two-finger drag to pan";
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -32,13 +35,15 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.castShadow = true; su
 const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(-1, 0.6, -1); scene.add(fill);
 const camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-// Not grabbed: one finger scrolls the page (touch-action pan-y), two fingers pinch-zoom the model, the mouse drags to turn it,
-// and the mouse wheel scrolls the page (Ctrl + wheel zooms). 'Move the model' adds one-finger turning.
-let grabbed = false;
-function setTouches() { controls.touches = { ONE: grabbed ? THREE.TOUCH.ROTATE : null, TWO: THREE.TOUCH.DOLLY_PAN }; }
-setTouches();
-host.addEventListener("wheel", (e) => { if (!grabbed && !e.ctrlKey) e.stopPropagation(); }, { capture: true });
+// as on the drone guide: no glide after you let go; the wheel zooms; one finger turns, two fingers zoom and slide;
+// the page scrolls when touched outside the model (touch-action:none on the model only)
+controls.enableDamping = false;
+controls.enablePan = true;
+controls.zoomSpeed = 0.9;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+const FLOOR = Math.PI * 0.495, BELOW = Math.PI * 0.97;   // never under the floor, except in a view from below (step 5)
+let userMoved = false;                                    // the camera is where you put it (until Reset view or a step)
+controls.addEventListener("start", () => { userMoved = true; });
 const root = new THREE.Group(); scene.add(root);
 const groups = {}, home = new Map(), labelEls = {}, anchors = {};
 let spin = false, exploded = false, xray = false, labelsOn = true, power = false, measure = false, focus = null, topView = false;
@@ -47,8 +52,9 @@ const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const baseKey = (n) => (n || "").split("#")[0].split("__")[0];
 let currentView = "overview", currentAimNodes = null;
 
-function resize() { const w = host.clientWidth, h = host.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
-new ResizeObserver(() => { resize(); if (!tween) aimAt(currentView, false, currentAimNodes); }).observe(host); resize();
+function resize() { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+// a new size (a turned phone, Full screen) frames the view again, unless you have moved the camera yourself
+new ResizeObserver(() => { resize(); if (!tween && !userMoved) aimAt(currentView, false, currentAimNodes); }).observe(host); resize();
 
 Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logger.glb", res, undefined, rej)),
   fetch("models/colors.json").then((r) => r.json()), fetch("models/numbers.json").then((r) => r.json())])
@@ -127,32 +133,56 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
 // ---------- camera ----------
 // how far a part rises in the exploded view (mm)
 const lift = (k) => (k === "case_lid" ? 78 : k === "case_frame" || k === "fan" ? 52 : PI.includes(k) ? 22 : 0) + (k === "heatsink" ? 12 : 0);
+/** the 8 corners of every shown part's box, where the parts will be once they stop moving (model 'up' is the screen's y) */
+function cornersOf(nodes) {
+  const pts = [], one = new THREE.Box3();
+  (nodes && nodes.length ? nodes : Object.keys(groups)).forEach((k) => (groups[k] || []).forEach((o) => {
+    if (!o.visible) return;
+    const mover = home.has(o) ? o : o.parent, moved = home.has(mover) ? mover.position.z - home.get(mover).z : 0;
+    const rise = (exploded ? lift(k) : 0) - moved;
+    one.setFromObject(o); if (one.isEmpty()) return; one.min.y += rise; one.max.y += rise;
+    for (let i = 0; i < 8; i++) pts.push(new THREE.Vector3(i & 1 ? one.max.x : one.min.x, i & 2 ? one.max.y : one.min.y, i & 4 ? one.max.z : one.min.z));
+  }));
+  return pts;
+}
+// the camera fit is the drone guide's (docs/js/viewer3d.js, collectCorners + fitCamera): framed tight, not by a loose ball
+const probe = new THREE.PerspectiveCamera();
+/** how far back the camera must sit, looking along dir at centre, for the farthest corner to reach 'fill' of the frame */
+function fitDistance(points, centre, dir, fill = 0.88) {
+  probe.fov = camera.fov; probe.aspect = camera.aspect; probe.near = camera.near; probe.far = camera.far; probe.updateProjectionMatrix();
+  let dist = 0; points.forEach((p) => { dist = Math.max(dist, p.distanceTo(centre)); }); dist = Math.max(dist, 30) * 2.4;
+  const q = new THREE.Vector3();
+  for (let i = 0; i < 16; i++) {
+    probe.position.copy(centre).addScaledVector(dir, dist); probe.lookAt(centre); probe.updateMatrixWorld(true);
+    let worst = 0; points.forEach((p) => { q.copy(p).project(probe); worst = Math.max(worst, Math.abs(q.x), Math.abs(q.y)); });
+    if (worst <= 0.001 || Math.abs(worst - fill) < 0.006) break;
+    dist *= worst / fill;
+  }
+  return dist;
+}
+/** zoom limits as on the drone guide: 0.25x to 3.2x the fitted distance; the camera stays above the floor except from below */
+function setLimits(dist, below) { controls.minDistance = dist * 0.25; controls.maxDistance = dist * 3.2; controls.maxPolarAngle = below ? BELOW : FLOOR; }
 function aimAt(view, animate = true, nodes = null) {
   if (!fitSphere) return;
-  currentView = view; currentAimNodes = nodes;
-  let sphere = fitSphere;
-  if (nodes && nodes.length) {
-    const b = new THREE.Box3(), one = new THREE.Box3();
-    nodes.forEach((k) => (groups[k] || []).forEach((o) => {
-      // frame the parts where they will be once they stop moving (model 'up' is the screen's y)
-      const mover = home.has(o) ? o : o.parent, moved = home.has(mover) ? mover.position.z - home.get(mover).z : 0;
-      const rise = (exploded ? lift(k) : 0) - moved;
-      one.setFromObject(o); one.min.y += rise; one.max.y += rise; b.union(one);
-    }));
-    if (!b.isEmpty()) sphere = b.getBoundingSphere(new THREE.Sphere());
-  }
-  const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
-  const dist = Math.max(sphere.radius, 30) / Math.sin(Math.min(vfov, hfov) / 2) * 1.08;
+  currentView = view; currentAimNodes = nodes; userMoved = false;
+  const pts = cornersOf(nodes), box = new THREE.Box3().setFromPoints(pts);
+  const centre = pts.length ? box.getCenter(new THREE.Vector3()) : fitSphere.center.clone();
   const dir = new THREE.Vector3(...(VIEWS[view] || VIEWS.overview)).normalize();
-  const toPos = sphere.center.clone().addScaledVector(dir, dist), toTarget = sphere.center.clone();
-  if (!animate) { camera.position.copy(toPos); controls.target.copy(toTarget); controls.update(); return; }
+  const dist = pts.length ? fitDistance(pts, centre, dir) : fitSphere.radius * 3;
+  const toPos = centre.clone().addScaledVector(dir, dist), toTarget = centre.clone(), below = dir.y < 0;
+  if (!animate) { tween = null; setLimits(dist, below); camera.position.copy(toPos); controls.target.copy(toTarget); controls.update(); return; }
+  // while the camera glides to the new view the limits are wide open, so it never jumps; they close when it arrives
+  controls.minDistance = 0; controls.maxDistance = Infinity; controls.maxPolarAngle = BELOW;
   const fromPos = camera.position.clone(), fromTarget = controls.target.clone(), t0 = performance.now();
   tween = (now) => {
     const e = ease(Math.min(1, (now - t0) / 900));
     camera.position.lerpVectors(fromPos, toPos, e); controls.target.lerpVectors(fromTarget, toTarget, e);
-    if (e >= 1) tween = null;
+    if (e >= 1) { tween = null; setLimits(dist, below); }
   };
 }
+/** Reset view: the camera only (parts, modes and labels stay), back to the current step's own view */
+let stepAim = { view: "overview", nodes: null };
+function resetView() { aimAt(stepAim.view, true, stepAim.nodes); }
 
 // ---------- modes ----------
 function setExploded(on, animate = true) {
@@ -194,10 +224,21 @@ $("b-labels").onclick = () => { labelsOn = !labelsOn; press("b-labels", labelsOn
 $("b-measure").onclick = () => { setMeasure(!measure); if (measure) { setExploded(false, false); aimAt("top", true, ["board"]); } };
 $("b-power").onclick = () => { power = !power; press("b-power", power); paint(); };
 $("b-spin").onclick = () => { spin = !spin; press("b-spin", spin); };
-$("b-grab").onclick = () => {
-  grabbed = !grabbed; setTouches(); host.classList.toggle("grabbed", grabbed); press("b-grab", grabbed);
-  $("b-grab").textContent = grabbed ? "Done moving (scroll the page again)" : "Move the model";
+$("b-reset").onclick = resetView;
+// Full screen as on the drone guide: the real full screen where the browser has one for a page element; otherwise
+// (iPhone Safari), or when it fails, the 3D view fills the screen as an overlay with a Close button. Esc closes both.
+const vwrap = $("vwrap");
+function isFull() { return document.fullscreenElement === vwrap || vwrap.classList.contains("v-overlay"); }
+function setFullLabel() { $("b-full").textContent = isFull() ? "Close full screen" : "Full screen"; press("b-full", isFull()); }
+function closeOverlay() { vwrap.classList.remove("v-overlay"); document.documentElement.classList.remove("v-locked"); setFullLabel(); }
+function openOverlay() { vwrap.classList.add("v-overlay"); document.documentElement.classList.add("v-locked"); setFullLabel(); }
+$("b-full").onclick = () => {
+  if (vwrap.classList.contains("v-overlay")) { closeOverlay(); return; }
+  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  if (typeof vwrap.requestFullscreen === "function") vwrap.requestFullscreen().catch(openOverlay); else openOverlay();
 };
+document.addEventListener("fullscreenchange", setFullLabel);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && vwrap.classList.contains("v-overlay")) closeOverlay(); });
 
 // ---------- measurements drawn on the model (official numbers) ----------
 function buildMeasurements(s, num) {
@@ -240,7 +281,8 @@ function renderStep(i, animate = true) {
   const aim = frame ? frame : view === "mic" ? (s.n === 9 ? ["mic", "shelf", "cable", "case_base"] : ["mic"]) : extra === "measure" ? ["board"] : focus && view !== "overview" ? focus.filter((k) => k !== "mic") : null;
   if (extra === "measure") focus = ["board"];
   paint();
-  aimAt(view, animate, aim && aim.length ? aim : null);
+  stepAim = { view, nodes: aim && aim.length ? aim : null };
+  aimAt(view, animate, stepAim.nodes);
 }
 $("sp-back").onclick = () => renderStep(stepIdx - 1);
 $("sp-next").onclick = () => renderStep(stepIdx + 1);
@@ -287,3 +329,7 @@ renderer.setAnimationLoop((now) => {
   renderer.render(scene, camera);
   placeLabels();
 });
+
+// read-only numbers for the page check (checks/selftest.html): camera distance, zoom limits, the floor angle
+window.__view = () => ({ dist: camera.position.distanceTo(controls.target), min: controls.minDistance, max: controls.maxDistance,
+  polar: controls.getPolarAngle(), maxPolar: controls.maxPolarAngle, moved: userMoved, damping: controls.enableDamping, tweening: !!tween });
