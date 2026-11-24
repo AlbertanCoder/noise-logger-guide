@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -203,6 +204,16 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def do_GET(self):  # a page opened with slow=N in its address gets the model file N seconds late, like a phone on a slow connection
+        late = re.search(r"slow=(\d+)", self.headers.get("Referer") or "")
+        if late and self.path.split("?")[0].endswith(".glb"):
+            time.sleep(int(late.group(1)))
+        super().do_GET()
+
+    def end_headers(self):  # the test browser keeps nothing, so every load really asks this server
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def do_POST(self):  # the test page posts what it measured here when it has finished
         if self.path == "/selftest-result":
             RESULT.update(json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode("utf-8")))
@@ -277,6 +288,12 @@ ok(t.get("labelsAtStart") is False and t.get("labelsShownAtStart") == 0, f"no la
 ok("drawn by eye" in t.get("pointTag", "") and t.get("pointGone") is True, f"the mouse resting on the mic says {t.get('pointTag')!r}, and the name goes when it moves off")
 ok(t.get("labelsStored") == "1" and t.get("labelsAfterReload") is True and t.get("labelsButtonAfterReload") == "true" and t.get("labelsBackOff") == "0",
    f"the Labels choice survives a reload (stored {t.get('labelsStored')!r}, after reload {t.get('labelsAfterReload')})")
+sl = t.get("slow") or {}
+ok(sl.get("modelThereTooSoon") is False and "Loading" in sl.get("loadingSign", "") and sl.get("loadingSignGone") is True,
+   f"while the model is on its way the 3D box says so ({sl.get('loadingSign')!r}), and the words go when it is there")
+ok(str(sl.get("titleAfterModel", "")).startswith("3."), f"Next pressed three times before the model arrived is kept when it arrives ({sl.get('titleAfterModel')!r})")
+ok(sl.get("watchPressedBeforeModel") is True and str(sl.get("watchTitle", "")).startswith("6.") and sl.get("watchPlaying") is True,
+   f"'Watch it in 3D' pressed before the model arrived opens its step and plays it ({sl.get('watchTitle')!r}, playing: {sl.get('watchPlaying')})")
 ok(not t.get("errors"), f"no script errors while the page was used ({t.get('errors')})")
 links = t.get("links", [])
 same_tab = [l["href"] for l in links if not l["newTab"]]

@@ -178,6 +178,29 @@ async function run() {
   out.pc.measureMarks = marksInside(dp);
   dp.getElementById("b-measure").click(); await settleP(300);
 
+  // ---- a slow connection (audit of 24 Nov 2026, finding 2): check_page.py holds the model file back N seconds for an address with slow=N ----
+  f.style.width = "390px";
+  await new Promise((r) => { f.addEventListener("load", r, { once: true }); f.src = "../index.html?slow=2#model"; });
+  const ds = f.contentDocument;
+  f.contentWindow.addEventListener("error", (e) => out.errors.push(String(e.message)));
+  for (let i = 0; i < 50 && ds.body.dataset.viewerReady !== "yes"; i++) await wait(100);
+  const sign = ds.getElementById("vload");
+  out.slow = { modelThereTooSoon: ds.body.dataset.modelLoaded === "yes", loadingSign: sign && sign.getBoundingClientRect().height > 0 ? sign.textContent : "" };
+  for (let i = 0; i < 3; i++) ds.getElementById("sp-next").click();           // Next, three times, before the model is there
+  for (let i = 0; i < 150 && ds.body.dataset.modelLoaded !== "yes"; i++) await wait(100);
+  await wait(400);
+  out.slow.titleAfterModel = ds.getElementById("sp-title").textContent;         // still step 3, not back to step 0
+  out.slow.loadingSignGone = !ds.getElementById("vload");
+  await new Promise((r) => { f.addEventListener("load", r, { once: true }); f.src = "../index.html?slow=6#build"; });   // 6 s: the old code gave up waiting after 5
+  const dw = f.contentDocument, ww = f.contentWindow;
+  ww.addEventListener("error", (e) => out.errors.push(String(e.message)));
+  dw.querySelector("#step-6 .watch").click();                                   // 'Watch it in 3D' before the model is there
+  out.slow.watchPressedBeforeModel = dw.body.dataset.modelLoaded !== "yes";
+  for (let i = 0; i < 150 && dw.body.dataset.modelLoaded !== "yes"; i++) await wait(100);
+  await wait(900);
+  out.slow.watchTitle = dw.getElementById("sp-title").textContent;
+  out.slow.watchPlaying = !!ww.__view && (ww.__view().playing || ww.__view().playT > 0.2);
+
 }
 f.addEventListener("load", () => run().catch((e) => out.errors.push("selftest: " + e.message)).finally(() => {
   document.getElementById("selftest").textContent = JSON.stringify(out); document.title = "selftest done";

@@ -114,6 +114,7 @@ const offsets = new Map();                                // part -> how far the
 let spin = false, exploded = false, xray = false, labelsOn = store.get("labels") === "1", power = false, measure = false, focus = null, topView = false;
 let fanPivot = null, measureGroup = null, fitSphere = null, stepIdx = 0, tween = null, gltfScene = null;
 let explodeAmt = 0, explodeTween = null, litNow = null, openShown = false;
+let playWhenReady = false;                                // 'Watch it in 3D' was pressed before the model was here: play when it is
 const anim = { def: null, t: 0, playing: false, moves: [], bends: [], last: 0 };   // the current step's Play
 const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const baseKey = (n) => (n || "").split("#")[0].split("__")[0];
@@ -192,10 +193,13 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
       Object.keys(groups).forEach((k) => { if (!PI.includes(k) || k === "heatsink" || k === "fan") groups[k].forEach((o) => (o.visible = false)); });
       aimAt("top", false, PI.filter((k) => k !== "heatsink" && k !== "fan"));   // the board with its sockets (they stick out past its edge)
     } else {
-      const q = new URLSearchParams(location.search), st = parseInt(q.get("step") || "0", 10);
+      const q = new URLSearchParams(location.search), asked = q.get("step") === null ? -1 : STEPS.findIndex((x) => x.n === parseInt(q.get("step"), 10));
       const cam = (q.get("cam") || "").split(",").map(Number);    // proof pictures: ?cam=x,y,z looks at the whole model from that side
       if (cam.length === 3 && cam.every(isFinite)) VIEWS.overview = cam;
-      renderStep(STEPS.findIndex((x) => x.n === st) >= 0 ? STEPS.findIndex((x) => x.n === st) : 0, false);
+      // the step in the address, or else the one already chosen while the model was on its way (audit of 24 Nov 2026,
+      // finding 2: on a slow connection Next, Back and 'Watch it in 3D' pressed before the model was here were thrown away)
+      const playNow = playWhenReady;
+      renderStep(asked >= 0 ? asked : stepIdx, false);
       (q.get("mode") || "").split(",").forEach((m) => {  // e.g. ?mode=exploded,xray,power,measure (shareable views)
         if (m === "exploded") { setExploded(true, false); aimAt("overview", false, BOX_PARTS); }
         if (m === "xray") { xray = true; press("b-xray", true); }
@@ -205,13 +209,14 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
       });
       if (q.get("frame")) aimAt("overview", false, q.get("frame").split(","));   // proof pictures: ?frame=mic fills the picture with those parts
       const at = parseFloat(q.get("at"));                                         // proof pictures: ?at=0.5 stops the step's animation half way
-      if (anim.def && isFinite(at)) seek(at * anim.def.dur);
+      if (anim.def && isFinite(at)) seek(at * anim.def.dur); else if (playNow) play();
       paint();
     }
     if (!topView) place();
+    if ($("vload")) $("vload").remove();                   // the 'Loading' words
     document.body.dataset.modelLoaded = "yes";
   })
-  .catch((err) => host.insertAdjacentHTML("beforeend", "<p style='padding:12px'>The 3D model could not load: " + err.message + "</p>"));
+  .catch((err) => { if ($("vload")) $("vload").remove(); host.insertAdjacentHTML("beforeend", "<p style='padding:12px'>The 3D model could not load: " + err.message + "</p>"); });
 
 // ---------- camera ----------
 // how far a part rises in the exploded view (mm)
@@ -465,7 +470,7 @@ function buildMeasurements(s, num) {
 
 // ---------- step panel ----------
 function renderStep(i, animate = true) {
-  stepIdx = Math.max(0, Math.min(STEPS.length - 1, i));
+  stepIdx = Math.max(0, Math.min(STEPS.length - 1, i)); playWhenReady = false;
   const s = STEPS[stepIdx], [view, extra, frame] = STEP_VIEW[s.n] || ["overview"];
   $("sp-count").textContent = s.n === 0 ? "Optional" : "Step " + s.n + " of " + (STEPS.length - 1);
   $("sp-title").textContent = s.n + ". " + s.title;
@@ -494,7 +499,8 @@ $("sp-next").onclick = () => renderStep(stepIdx + 1);
 $("m-back").onclick = () => renderStep(stepIdx - 1);
 $("m-next").onclick = () => renderStep(stepIdx + 1);
 // "Watch it in 3D" on a Build step opens that step here and plays it
-window.addEventListener("guide-focus", (e) => { const j = STEPS.findIndex((s) => "Step " + s.n + ": " + s.title === e.detail.title); renderStep(j >= 0 ? j : 0); play(); });
+window.addEventListener("guide-focus", (e) => { const j = STEPS.findIndex((s) => "Step " + s.n + ": " + s.title === e.detail.title); renderStep(j >= 0 ? j : 0); if (groups.board) play(); else playWhenReady = true; });
+document.body.dataset.viewerReady = "yes";              // js/app2.js waits for this before it sends 'Watch it in 3D' here
 
 // ---------- labels (leader dot, never overlapping, always inside the frame) ----------
 const v = new THREE.Vector3();

@@ -11,7 +11,7 @@
 
   function boot() {
     start(JSON.parse(document.getElementById("buy-data").textContent), JSON.parse(document.getElementById("steps-data").textContent));
-    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js?v=0c1c5f99"; document.body.appendChild(m);   // the ?v= fingerprint is written by scripts/make_pictures.py
+    var m = document.createElement("script"); m.type = "module"; m.src = "js/viewer.js?v=b1b74cf7"; document.body.appendChild(m);   // the ?v= fingerprint is written by scripts/make_pictures.py
   }
   boot();
 
@@ -75,7 +75,7 @@
       function go3d() {
         show("model");
         var tries = 0, t = setInterval(function () {
-          if (document.body.dataset.modelLoaded === "yes" || ++tries > 50) {
+          if (document.body.dataset.viewerReady === "yes" || ++tries > 600) {   // the 3D script is listening; it keeps the step and plays it when the model is here
             clearInterval(t);
             window.dispatchEvent(new CustomEvent("guide-focus", { detail: { nodes: s.focus || [], title: "Step " + s.n + ": " + s.title } }));
           }
