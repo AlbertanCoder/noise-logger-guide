@@ -86,7 +86,7 @@ def main():
             png = Path(tmp) / f"{s['n']}.png"
             for attempt in range(3):   # a second and third try, in case the hidden browser did not answer
                 colours = 0
-                if shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels" + AT.get(s["n"], ""), png):
+                if shot(f"http://127.0.0.1:{srv.server_port}/checks/step-picture.html?step={s['n']}&mode=nolabels,still" + AT.get(s["n"], ""), png):
                     im = Image.open(png).convert("RGB").crop((0, 0, 640, 388))
                     colours = len(im.resize((80, 48)).getcolors(10000) or [])
                 if colours > 40:

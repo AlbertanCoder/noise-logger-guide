@@ -1,6 +1,6 @@
 <!doctype html><meta charset="utf-8"><body style="margin:0;background:#f7f2e8"><iframe id="f" style="width:1200px;height:1400px;border:0"></iframe>
 <script>/* Frame used by scripts/make_pictures.py: loads one step of the 3D tab, leaves only the 3D view (640 x 388), waits until it
-   has really been drawn, then sends the picture to the script. ?step=6&mode=nolabels */
+   has really been drawn, then sends the picture to the script. ?step=6&mode=nolabels,still */
 const f=document.getElementById('f');f.src='../index.html'+location.search+'#model';
 f.onload=function(){const d=f.contentDocument,w=f.contentWindow;const t=setInterval(async function(){if(d.body.dataset.modelLoaded!=='yes')return;clearInterval(t);
  const v=d.getElementById('viewer'),c=v.querySelector('canvas');v.style.cssText='position:fixed;left:0;top:0;width:640px;height:388px;z-index:9999;border-radius:0;border:0';

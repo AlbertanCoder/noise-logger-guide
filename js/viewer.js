@@ -115,6 +115,7 @@ const offsets = new Map();                                // part -> how far the
 let spin = false, exploded = false, xray = false, labelsOn = store.get("labels") === "1", power = false, measure = false, focus = null, topView = false;
 let fanPivot = null, measureGroup = null, fitSphere = null, stepIdx = 0, tween = null, gltfScene = null;
 let explodeAmt = 0, explodeTween = null, litNow = null, openShown = false;
+let still = false;                                        // proof pictures (?mode=still): the fan stands where it is, so the same model gives the same picture
 let playWhenReady = false;                                // 'Watch it in 3D' was pressed before the model was here: play when it is
 const anim = { def: null, t: 0, playing: false, moves: [], bends: [], last: 0 };   // the current step's Play
 const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -206,6 +207,7 @@ Promise.all([new Promise((res, rej) => new GLTFLoader().load("models/noise-logge
         if (m === "xray") { xray = true; press("b-xray", true); }
         if (m === "power") { power = true; press("b-power", true); }
         if (m === "measure") { measure = true; setExploded(false, false); xray = true; press("b-xray", true); aimAt("top", false, ["board"]); press("b-measure", true); if (measureGroup) measureGroup.visible = true; }
+        if (m === "still") still = true;
         if (m === "nolabels") { labelsOn = false; press("b-labels", false); }   // for this visit only: the remembered choice stays
       });
       if (q.get("frame")) aimAt("overview", false, q.get("frame").split(","));   // proof pictures: ?frame=mic fills the picture with those parts
@@ -554,7 +556,7 @@ renderer.setAnimationLoop((now) => {
   if (home.size && !topView) place();
   if (pointAt) { pick(pointAt[0], pointAt[1], true); pointAt = null; }
   if (spin) root.rotation.y += 0.004;
-  if (powerNow() && fanPivot) fanPivot.rotation.z += 0.35;
+  if (powerNow() && fanPivot && !still) fanPivot.rotation.z += 0.35;
   controls.update();
   renderer.render(scene, camera);
   placeLabels();
